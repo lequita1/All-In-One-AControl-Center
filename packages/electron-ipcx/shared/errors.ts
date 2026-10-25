@@ -177,8 +177,8 @@ export function unwrapError<T>(value: T | ErrorEnvelope): T {
   if (isErrorEnvelope(value)) {
     const error = new Error(value.message)
     error.name = value.name
-    // @ts-expect-error non-standard property
     if (value.code)
+      // @ts-expect-error non-standard property
       error.code = value.code
     if (value.stack)
       error.stack = value.stack

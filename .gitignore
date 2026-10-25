@@ -19,7 +19,6 @@ lerna-debug.log*
 
 # User
 node_modules
-pnpm-lock.yaml
 package-lock.json
 yarn.lock
 *.local
@@ -29,3 +28,9 @@ yarn.lock
 
 # Dist
 dist*
+
+# Project-local tooling, verification logs and personal continuity pointer
+.local-tools/
+.baseline-logs/
+.superpowers/
+.project-memory.json

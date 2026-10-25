@@ -20,14 +20,6 @@ export default {
 
   asarUnpack: nativeModuleAsarUnpack,
 
-  extraResources: [
-    {
-      from: '../packages/madb/dist',
-      to: 'extra/common/madb',
-      filter: ['index.mjs'],
-    },
-  ],
-
   win,
   nsis,
   portable,
@@ -44,9 +36,9 @@ export default {
 
   publish: {
     provider: 'github',
-    owner: 'viarotel-org',
-    repo: 'escrcpy',
-    updaterCacheDirName: 'escrcpy-updater',
+    owner: 'lequita1',
+    repo: 'All-In-One-AControl-Center',
+    updaterCacheDirName: 'android-control-center-updater',
   },
 
   electronDownload: {

@@ -1,4 +1,4 @@
 provider: github
-owner: viarotel-org
-repo: escrcpy
-updaterCacheDirName: escrcpy-updater
+owner: lequita1
+repo: All-In-One-AControl-Center
+updaterCacheDirName: android-control-center-updater

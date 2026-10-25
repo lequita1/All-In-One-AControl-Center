@@ -33,6 +33,6 @@
     "electron": "*",
     "tsdown": "*",
     "typescript": "*",
-    "vitest": "^2.1.5"
+    "vitest": "4.1.12"
   }
 }

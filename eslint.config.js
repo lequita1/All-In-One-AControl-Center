@@ -21,6 +21,7 @@ export default antfu(
       'dist-electron',
       'dist-release',
       'context',
+      'docs/project/project-brief.md', // Immutable copy of the user's original brief.
     ],
   },
   {
