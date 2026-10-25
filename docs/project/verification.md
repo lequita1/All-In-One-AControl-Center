@@ -74,3 +74,38 @@ An installed ADB client was found at `C:/Program Files/SuperDisplay/adb/adb.exe`
 Final result: the rebuilt portable launched visibly; Windows enumerated its Escrcpy window and a device-specific scrcpy mirror window. The user then explicitly confirmed **“Video, mouse, and keyboard all work.”** This is user-performed hardware verification on the POCO, separate from our automated checks. The assistant did not independently inspect decoded video or send test input after the user took control/minimized the mirror. No SuperDisplay compatibility test or service stop was needed.
 
 Phase 1 lean gate is complete: frozen install, checks, portable build/launch, and user-verified POCO video/input. Scope of this pass is one Windows PC and one phone; wireless, reconnection robustness, other feature workflows and public release readiness are not yet verified. Retain the initial server-version/authorization churn and inherited mirror rejection handling as connection-hardening follow-up items.
+
+## 26 October 2026 — source publication and Phase 2 security checkpoint
+
+Authorization: user requested pushing to the selected repository, continuing the roadmap, creating a goal covering it and strengthening runtime/source-intake security. GitHub CLI authentication completed; account `lequita1` and repository ADMIN access verified. No token was printed or committed.
+
+Publication: reviewed baseline `d564f9e7` and publication preparation `41a21ca07d79190c2747b9fc387d3e2f81467392` pushed to `origin/main`, then confirmed through GitHub's commit API. Repository default branch is `main`; active inherited workflows: zero. Six inherited release/sync/deployment workflows were disabled before pushing. Upstream push URL remains `DISABLED`. Own unpublished baseline author was corrected to the GitHub no-reply identity before the first push; attribution/history/license were preserved. No release or binary upload occurred.
+
+Runtime/dependency source checkpoint: `430075c1d825a1e2bc4c72ae13c7ed0736780c2b` on `feat/secure-device-operations`, followed by the packaging exclusion correction below. Node 24.20.0, pnpm 10.29.2, Vitest 4.1.12, Electron 42.11.16, Vite 8.1.6.
+
+### Verified automated results
+
+- `pnpm install --frozen-lockfile --offline --ignore-scripts`: exit 0; lock resolution skipped, already up to date. Reviewed full installation ran earlier with allowed native lifecycle scripts; this later check did not repeat scripts.
+- `pnpm test`: exit 0, **86 tests across nine files**, including two existing IPC tests. New tests use actual parsing/middleware/adbx logic with external process/device I/O replaced. A/B injected transports record their own commands; invalid targets must be rejected before transport lookup. This is not a two-phone hardware test.
+- Tests were observed failing before fixes: hostile/override arguments, unhandled mirror startup rejection, split readiness output, startup timeout, stale/unowned process termination, invalid targets/endpoints, automatic shared-server shutdown, untargeted tether stop, abbreviated selectors, discovered-device disconnect and callback-based cancellation. Later full suite passes with no unhandled errors.
+- `pnpm lint`: exit 0 after correcting actual style/regex findings. `pnpm -r --if-present typecheck`: all five package checks pass.
+- `pnpm exec turbo run build`: all six tasks pass. One packaging-preparation run failed writing generated `desktop/components.d.ts` with filesystem error `UNKNOWN`; inspected the file, then repeated the build sequentially without source repair and all six tasks passed. Cause unproven; do not label it an application defect or claim a specific external process caused it.
+- `pnpm audit --json`: **one high**, zero critical/moderate/low, down from the initial 51 matches. Remaining node-forge advisory has no published patch; its optional adbkit bridge verification path and lack of app callers are recorded in [intake evidence](security-intake.md). It is not suppressed or declared fixed.
+- Independent branch review found two important regressions, both corrected with failing-then-passing tests: getopt long-option abbreviations could replace the selected serial, and discovered wireless serials were incorrectly validated as hostnames. Review also identified inherited callback-based termination misuse; cancellation now awaits the actual callback and preserves ownership on failure.
+- Staged publication scan found no common credential patterns, local user path or test-device serial. `git diff --cached --check` passed. Local tooling and device logs remain ignored.
+
+Sanitized local execution logs are under ignored `.baseline-logs/`: `security-final-tests.log`, `security-final-types.log`, `security-lint-final-pass.log`, `security-build-retry.log`, `security-frozen.log`, `security-audit-final.json`; failed regression runs have separate descriptive `*-red.log` files. These machine-local logs are not uploaded. Public verification is described here and can be reproduced from the committed tests.
+
+### Scope and remaining checks
+
+Host commands use resolved executables plus argument arrays and prohibit a host shell. Targeted scrcpy APIs reject selector overrides and abbreviations; custom options require long names. Startup failures settle once, readiness handles split chunks and waits are bounded. Child cleanup skips closed/unowned processes and waits for callback-based termination. App exit/tool-directory changes no longer automatically stop the shared ADB server. Global reverse-tether cleanup uses explicitly tracked session targets; its relay remains app-wide and has no multi-phone hardware claim.
+
+Official Windows tool comparisons and Defender scan evidence are in [security-intake.md](security-intake.md). The runtime was changed after the Phase 1 hardware test: **fresh launch/POCO mirroring/input and wireless/reconnect checks remain pending for the new artifact**. The earlier user confirmation applies to the retained baseline only. Broad Electron/IPC privileges, Android-side package/path command safety, full binary provenance and conditional distribution gates remain open in the roadmap. No claim of complete security or public release readiness.
+
+### Portable package inspection
+
+Built x64 portable with the existing builder configuration and an ignored wrapper changing only its output directory, using `pnpm --filter escrcpy exec electron-builder --config=../.local-tools/electron-builder-security-verified.config.mjs --win portable --x64 --publish=never`: exit 0. Conditional foreign-platform optional-dependency warnings remain; these do not establish runtime success on other platforms.
+
+An earlier package inspection found **34 entries from the prior baseline build** inside `app.asar`, pulled in by native-module globs. Added an explicit `dist-release` exclusion in `desktop/build/native-modules.js`, rebuilt into a separate directory, then inspected with `@electron/asar.listPackage`: 260 entries, **zero prior-build entries**, zero foreign-platform node-pty entries. The failed intermediate artifact remains local and is not the checkpoint artifact.
+
+Verified artifact: `desktop/dist-release/security-verified/Escrcpy-3.3.1-win-portable-x64.exe`, **114,031,703 bytes**, SHA-256 `e0fac46bec2971f5314b6de602c98a5b7d88e11916838b6a0dc7e8e2d2403545`. Authenticode status: **NotSigned** despite builder signing-step log messages. Packaging log: ignored `.baseline-logs/security-portable-verified.log`. No new launch, live mirror or input result is claimed for this file.
