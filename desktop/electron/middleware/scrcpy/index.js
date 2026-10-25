@@ -1,5 +1,7 @@
 import { electronAPI } from '@electron-toolkit/preload'
 import { sheller } from '$electron/helpers/shell/index.js'
+import { parseArguments, validateDeviceSerial } from '$electron/helpers/shell/arguments.js'
+import { getScrcpy } from '$electron/configs/index.js'
 import commandHelper from '$renderer/utils/command/index.js'
 import { createDeferred } from '$renderer/utils/index.js'
 
@@ -15,19 +17,19 @@ electronAPI.ipcRenderer.on('quit-before', () => {
 
 function normalizeScrcpyError(error) {
   const message = error?.stderr || error?.message || String(error)
-  throw new Error(message)
+  return new Error(String(message))
 }
 
 function createScrcpyProcess(command, options = {}) {
   let mirrorProcess = null
 
   const {
-    args = '',
     resolveOnReady = false,
     resolveOnSpawn = false,
     readyPattern = /(?:Renderer:|Texture:|\[server\]\s+INFO:\s+Device:)/i,
     getReadyValue = () => void 0,
     readyErrorMessage = 'scrcpy process exited before ready',
+    startupTimeout = 15000,
     stdout,
     stderr,
     ...shellerOptions
@@ -37,12 +39,34 @@ function createScrcpyProcess(command, options = {}) {
     ? createDeferred()
     : null
 
-  function resolveReady(data) {
-    if (!readyDeferred || !resolveOnReady) {
+  if (readyDeferred && (!Number.isFinite(startupTimeout) || startupTimeout < 1 || startupTimeout > 120000)) {
+    throw new TypeError('Invalid scrcpy startup timeout')
+  }
+
+  let readySettled = false
+  let readyTimer
+  const output = { stdout: '', stderr: '' }
+
+  function settleReady(error, value) {
+    if (!readyDeferred || readySettled) {
+      return
+    }
+    readySettled = true
+    clearTimeout(readyTimer)
+    if (error) {
+      readyDeferred.reject(error)
+    }
+    else {
+      readyDeferred.resolve(value)
+    }
+  }
+
+  function resolveReady(data, stream) {
+    if (!readyDeferred || !resolveOnReady || readySettled) {
       return
     }
 
-    const text = String(data)
+    const text = output[stream] = (output[stream] + String(data)).slice(-8192)
 
     if (!text.trim()) {
       return
@@ -57,45 +81,56 @@ function createScrcpyProcess(command, options = {}) {
     }
 
     try {
-      readyDeferred.resolve(getReadyValue(matchList, text))
+      settleReady(null, getReadyValue(matchList, text))
     }
     catch (error) {
-      readyDeferred.reject(error)
+      settleReady(error)
     }
   }
 
-  mirrorProcess = sheller(`scrcpy ${command}`, {
-    shell: true,
+  mirrorProcess = sheller([getScrcpy(), ...parseArguments(command)], {
     encoding: 'utf8',
     ...shellerOptions,
+    shell: false,
 
     stdout: (data) => {
       stdout?.(data, mirrorProcess)
-      resolveReady(data)
+      resolveReady(data, 'stdout')
     },
 
     stderr: (data) => {
       stderr?.(data, mirrorProcess)
-      resolveReady(data)
+      resolveReady(data, 'stderr')
     },
   })
 
   processManager.add(mirrorProcess)
 
+  if (readyDeferred) {
+    readyTimer = setTimeout(() => {
+      settleReady(new Error('scrcpy startup timed out'))
+      Promise.resolve(mirrorProcess.kill()).catch(() => {})
+    }, startupTimeout)
+  }
+
   if (resolveOnSpawn) {
     mirrorProcess.once('spawn', () => {
-      readyDeferred?.resolve()
+      settleReady()
     })
   }
 
   const exitPromise = mirrorProcess
     .then((result) => {
-      readyDeferred?.reject(new Error(readyErrorMessage))
+      settleReady(new Error(readyErrorMessage))
       return result
     })
     .catch((error) => {
-      readyDeferred?.reject(error)
-      normalizeScrcpyError(error)
+      const normalized = normalizeScrcpyError(error)
+      if (readyDeferred) {
+        settleReady(normalized)
+        return
+      }
+      throw normalized
     })
 
   const promise = readyDeferred
@@ -114,9 +149,28 @@ function createMirrorProcess(
   { title, args = '', ...options } = {},
 ) {
   return createScrcpyProcess(
-    `--serial="${serial}" --window-title="${title}" ${args}`,
+    [
+      `--serial=${validateDeviceSerial(serial)}`,
+      `--window-title=${title ?? ''}`,
+      ...targetedOptions(args),
+    ],
     options,
   )
+}
+
+function targetedOptions(input) {
+  const args = parseArguments(input)
+  // getopt short-option clusters can conceal -s/-d/-e. Preferences use long
+  // names already; require those for custom options rather than guess arity.
+  const selectors = ['--serial', '--select-usb', '--select-tcpip', '--tcpip']
+  if (args.some((arg) => {
+    const flag = arg.split('=')[0]
+    // getopt_long also accepts unambiguous prefixes, e.g. --ser=other.
+    return arg === '--' || /^-[^-]/.test(arg) || (flag.startsWith('--') && selectors.some(selector => selector.startsWith(flag)))
+  })) {
+    throw new TypeError('Use long mirroring options without overriding the selected device')
+  }
+  return args
 }
 
 async function shell(...args) {
@@ -124,7 +178,7 @@ async function shell(...args) {
 }
 
 async function getEncoders(serial) {
-  const res = await createScrcpyProcess(`--serial="${serial}" --list-encoders`)
+  const res = await createScrcpyProcess([`--serial=${validateDeviceSerial(serial)}`, '--list-encoders'])
 
   const stdout = res.stdout
 
@@ -139,7 +193,7 @@ async function mirror(...args) {
 
 async function record(serial, { title, args = '', savePath, ...options } = {}) {
   return createScrcpyProcess(
-    `--serial="${serial}" --window-title="${title}" --record="${savePath}" ${args}`,
+    [`--serial=${validateDeviceSerial(serial)}`, `--window-title=${title ?? ''}`, `--record=${savePath}`, ...targetedOptions(args)],
     options,
   )
 }
@@ -152,7 +206,7 @@ async function helper(
   const stringCommand = commandHelper.stringify(command)
 
   return createScrcpyProcess(
-    `--serial="${serial}" --no-window --no-video --no-audio ${stringCommand}`,
+    [`--serial=${validateDeviceSerial(serial)}`, '--no-window', '--no-video', '--no-audio', ...targetedOptions(stringCommand)],
     {
       resolveOnReady: true,
       ...options,
@@ -161,7 +215,7 @@ async function helper(
 }
 
 async function getAppList(serial) {
-  const res = await createScrcpyProcess(`--serial="${serial}" --list-apps`)
+  const res = await createScrcpyProcess([`--serial=${validateDeviceSerial(serial)}`, '--list-apps'])
 
   const stdout = res.stdout
 
@@ -171,7 +225,7 @@ async function getAppList(serial) {
 }
 
 async function getDisplayIds(serial) {
-  const res = await createScrcpyProcess(`--serial="${serial}" --list-displays`)
+  const res = await createScrcpyProcess([`--serial=${validateDeviceSerial(serial)}`, '--list-displays'])
 
   const stdout = res.stdout
 
@@ -181,7 +235,7 @@ async function getDisplayIds(serial) {
 }
 
 async function getCameraList(serial, options) {
-  const res = await createScrcpyProcess(`--serial="${serial}" --list-cameras`)
+  const res = await createScrcpyProcess([`--serial=${validateDeviceSerial(serial)}`, '--list-cameras'])
 
   const stdout = res.stdout
 
@@ -200,18 +254,18 @@ async function launch(serial, args = {}) {
     ...options
   } = args
 
+  commands = targetedOptions(commands)
+
   if (useNewDisplay) {
-    commands += newDisplay
-      ? ` --new-display=${newDisplay}`
-      : ' --new-display'
+    commands.push(newDisplay ? `--new-display=${newDisplay}` : '--new-display')
   }
 
   if (landscape || !useNewDisplay) {
-    commands = commands.replace(/\s*--flex-display\s*/g, ' ')
+    commands = commands.filter(arg => arg !== '--flex-display')
   }
 
   if (packageName && packageName !== 'unknown') {
-    commands += ` --start-app=${packageName}`
+    commands.push(`--start-app=${packageName}`)
   }
 
   return createMirrorProcess(serial, {

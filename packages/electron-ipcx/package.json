@@ -27,10 +27,10 @@
   },
   "dependencies": {
     "es-toolkit": "^1.43.0",
-    "nanoid": "^5.0.7"
+    "nanoid": "5.1.16"
   },
   "devDependencies": {
-    "electron": "*",
+    "electron": "42.11.16",
     "tsdown": "*",
     "typescript": "*",
     "vitest": "4.1.12"

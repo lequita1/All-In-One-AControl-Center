@@ -35,7 +35,7 @@ Read SECURITY.md before pulling code, changing dependencies or privileged operat
 - Electron install repair: `pnpm electron-fix` when Electron reports an incomplete install.
 - wscrcpy type check: `pnpm --filter @escrcpy/wscrcpy typecheck` (vue-tsc; plain tsc cannot resolve `.vue` imports).
 
-There is no repo-wide test script today. For changes, run the smallest meaningful verification first, then `pnpm lint`; use `pnpm build` for packaging, Electron main-process, Vite config, dependency, or release-sensitive changes.
+Run `pnpm test` for the complete workspace test suite. For changes, run the smallest meaningful verification first, then the full suite and `pnpm lint`; use the dependency-ordered build for packaging, Electron main-process, Vite config, dependency, or release-sensitive changes.
 
 ## Frontend Patterns
 

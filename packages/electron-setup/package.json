@@ -35,11 +35,11 @@
     "@escrcpy/electron-ipcx": "workspace:*",
     "electron-store": "^10.0.0",
     "es-toolkit": "^1.43.0",
-    "nanoid": "^5.0.7",
+    "nanoid": "5.1.16",
     "unctx": "^2.4.0"
   },
   "devDependencies": {
-    "electron": "*",
+    "electron": "42.11.16",
     "tsdown": "*",
     "typescript": "*"
   }

@@ -46,11 +46,11 @@ No installer, Windows CI, SBOM, ten-cycle/five-minute soak test, second phone or
 
 ### Phase 2 — connection and interface usability
 
-In progress: user requested runtime/supply-chain security as a first-class requirement. Remediate known critical dependency paths and test host command boundaries before expanding them. See SECURITY.md; a clean scan alone is not proof of safety.
+In progress: user requested runtime/supply-chain security as a first-class requirement and authorized source publication to the selected repository. The baseline is on `main`; security work continues on `feat/secure-device-operations`. See [implementation notes](phase-2-plan.md) and SECURITY.md. A clean scan alone is not proof of safety.
 
 - [ ] Verify existing USB/wireless/mirroring paths before replacing them; fix observed connection/reconnect/authorization defects and show usable errors.
 - [ ] Improve device selector/navigation and basic information within existing UI conventions.
-- [ ] Establish the mock transport/launcher test seam described below as affected paths are touched, before accepting new targeting behavior.
+- [x] Establish the mock transport/launcher test seam described below as affected paths are touched, before accepting new targeting behavior. Automated A/B transport isolation, host argv and startup/cancellation tests exist; this is not two-phone hardware verification.
 - [ ] Decide embedded mirroring through its isolated spike; do not turn it into a prerequisite for every other feature.
 
 ### Phase 3 — application management

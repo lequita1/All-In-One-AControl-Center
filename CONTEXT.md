@@ -1,10 +1,10 @@
 # Android Control Center — Context
 
-Goal: Build a reliable local-first Windows x64 Android management application from audited public Escrcpy source, incrementally, with device safety and verified functionality; currently Phase 0 planning and repository readiness.
+Goal: Build a reliable local-first Windows x64 Android management application from inspected public Escrcpy source, incrementally, with device safety and verified functionality.
 
 ## Current state
 
-Current task: execute the user-approved lean personal-use baseline. Read roadmap for live scope/gates and verification log for results. Use chore/windows-baseline in the existing checkout. Origin is the selected user repository; upstream push is disabled. No publication is needed for local baseline work.
+Current task: continue the approved roadmap on `feat/secure-device-operations`, beginning with Phase 2 and security hardening. The verified baseline source is published on the selected repository's `main`; upstream push is disabled. An active goal covers the full roadmap, with distribution conditional on audience/release gates. Read roadmap for scope, verification for results and phase-2-plan for implementation order.
 
 ## Task routes
 

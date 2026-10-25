@@ -1,5 +1,13 @@
 // ── Shell Command Blocklist ──────────────────────────────────────────────
 
+/** Require a concrete USB, emulator, TCP/IP or discovered ADB target. */
+export function validateDeviceSerial(serial: string): string {
+  if (typeof serial !== 'string' || !/^[a-z0-9[][\w.:[\]%-]{0,255}$/i.test(serial)) {
+    throw new TypeError('A valid explicit device target is required')
+  }
+  return serial
+}
+
 /**
  * Dangerous command patterns that should be blocked by default.
  * Each entry is a regex tested against the full command string.

@@ -11,6 +11,7 @@
   "scripts": {
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
+    "test": "vitest run",
     "dev": "turbo dev",
     "build": "turbo build:electron",
     "build:win": "turbo build:electron -- --win",
@@ -34,6 +35,7 @@
     "turbo": "2.10.12",
     "vitepress": "1.6.4",
     "vitepress-i18n": "1.3.3",
-    "vitepress-sidebar": "1.31.1"
+    "vitepress-sidebar": "1.31.1",
+    "vitest": "4.1.12"
   }
 }
