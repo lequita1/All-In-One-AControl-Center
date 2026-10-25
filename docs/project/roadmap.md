@@ -46,6 +46,8 @@ No installer, Windows CI, SBOM, ten-cycle/five-minute soak test, second phone or
 
 ### Phase 2 — connection and interface usability
 
+In progress: user requested runtime/supply-chain security as a first-class requirement. Remediate known critical dependency paths and test host command boundaries before expanding them. See SECURITY.md; a clean scan alone is not proof of safety.
+
 - [ ] Verify existing USB/wireless/mirroring paths before replacing them; fix observed connection/reconnect/authorization defects and show usable errors.
 - [ ] Improve device selector/navigation and basic information within existing UI conventions.
 - [ ] Establish the mock transport/launcher test seam described below as affected paths are touched, before accepting new targeting behavior.
@@ -122,4 +124,4 @@ Go only if the prototype demonstrates video/input and teardown on the POCO, need
 
 Audience is settled: personal first. Lean baseline implementation approved; embedded spike remains a separate later decision; phone cable/debugging/driver availability is checked during assisted setup. The latest build/test/repository observations are in the verification log, not repeated here.
 
-Next: plan and execute the Phase 2 connection/interface work from this working baseline, preserving the verified device path. No full UI redesign, broad privilege rewrite, release publication or private-extension integration is authorized by this document.
+Next: plan and execute the Phase 2 connection/interface work from this working baseline, preserving the verified device path. On 26 October 2026 the user authorized pushing reviewed source and continuing the full roadmap, explicitly prioritizing runtime and dependency/source security. Implement in verified increments; private extensions and public binary releases still require their respective gates.

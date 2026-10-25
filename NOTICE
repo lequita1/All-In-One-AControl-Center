@@ -1,0 +1,12 @@
+Android Control Center
+
+Derived from Escrcpy by viarotel and contributors:
+https://github.com/viarotel-org/escrcpy
+Public source baseline: v3.3.1, e35972b46e1ec6724815fd13d1ef1c5b1aa0272f.
+
+Escrcpy source is provided under the Apache License, Version 2.0; see LICENSE.
+This derivative modifies build/dependency configuration and project documentation.
+Further changes are identified in Git history and project verification records.
+Original copyright and attribution notices are retained. Third-party components
+retain their own licenses; a complete shipped-binary notice inventory is required
+before distributing this derivative's executables.

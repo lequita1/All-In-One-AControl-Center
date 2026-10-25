@@ -1,18 +1,28 @@
 # AGENTS
 
-Escrcpy is a pnpm + Turborepo monorepo for an Electron GUI around Android mirroring/control with scrcpy. Keep this file focused on agent-critical facts; link existing docs instead of copying them. For the broader overview, start with [develop.md](../develop.md).
+## Android Control Center audit checkpoint
+
+Read `CONTEXT.md` and `docs/project/roadmap.md` before work. The user approved the lean personal-use baseline on 26 October 2026. Current scope/gates are in the roadmap and actual results in `docs/project/verification.md`. Keep fixes minimal; do not revive superseded public-release prerequisites. Verify remotes before pushes; upstream pushing is disabled.
+
+The inherited guidance below describes some private/full-release modules absent in this public v3.3.1 tree. Verify actual files: only main/control/explorer/terminal entries and five workspace packages are present. See `docs/project/source-audit.md`; do not assume wscrcpy/madb/copilot/automation source exists.
+
+Escrcpy is a pnpm + Turborepo monorepo for an Electron GUI around Android mirroring/control with scrcpy. Keep this file focused on agent-critical facts; link existing docs instead of copying them. For the broader overview, start with [develop.md](develop.md).
+
+## Security and source intake
+
+Read SECURITY.md before pulling code, changing dependencies or privileged operations. Current user authorization is to push the reviewed source to the selected repository and continue the roadmap with tested security hardening. Do not claim all source is safe from a scan alone. Inspect lifecycle scripts, use pinned official sources/lock integrity, validate trust boundaries and keep machine-local memory paths out of commits.
 
 ## Architecture
 
-- [desktop/](../desktop/) is the Electron app. The main process is plugin-based via `@escrcpy/electron-setup`; the entry point is [desktop/electron/main.js](../desktop/electron/main.js).
-- Renderer windows are separate Vite entries in [desktop/vite.config.js](../desktop/vite.config.js): `main`, `control`, `explorer`, `copilot`, `terminal`, `automation`, and `mirror`.
-- Window modules live under [desktop/electron/modules/](../desktop/electron/modules/). Register main-process features as modules/services instead of adding logic to the preload script.
-- [packages/electron-setup/](../packages/electron-setup/) provides app/plugin/window management primitives. [packages/electron-ipcx/README.md](../packages/electron-ipcx/README.md) documents IPC with renderer callbacks.
-- [packages/wscrcpy/](../packages/wscrcpy/) is a self-contained Vue + TS module built from `src/` (tsdown + unplugin-vue, declarations via vue-tsc). Two process-scoped entries: the package root exports the renderer-facing API (`Wscrcpy` component, composables, core helpers/types), and `@escrcpy/wscrcpy/main` exports the main-process ByteBridge factory — never import the root from main or `./main` from a renderer. `service/bridge/` is a thin main-process TCP ⇄ MessagePort pump; `src/stack/` owns the full protocol stack inside each window; `src/core/runtime.ts` routes every wscrcpy channel to the local stack. Preserve the public signatures and the `DeviceTarget = 'all' | 'primary' | string | string[]` contract; business code stays untouched across internal changes.
-- [packages/madb/](../packages/madb/) is an MCP server for AI agent Android device control via ADB and yadb (32 tools). See its [AGENTS.md](../packages/madb/AGENTS.md).
-- [packages/adbx/](../packages/adbx/) is an injected adbkit capability layer; it prefers yadb when available and falls back to standard ADB.
-- [packages/shared/](../packages/shared/) contains platform-neutral utilities shared across workspace packages.
-- [packages/unocss-preset-shades/](../packages/unocss-preset-shades/) is an UnoCSS preset that generates color shades from a base color.
+- [desktop/](desktop/) is the Electron app. The main process is plugin-based via `@escrcpy/electron-setup`; the entry point is [desktop/electron/main.js](desktop/electron/main.js).
+- Renderer windows are separate Vite entries in [desktop/vite.config.js](desktop/vite.config.js): `main`, `control`, `explorer`, `copilot`, `terminal`, `automation`, and `mirror`.
+- Window modules live under [desktop/electron/modules/](desktop/electron/modules/). Register main-process features as modules/services instead of adding logic to the preload script.
+- [packages/electron-setup/](packages/electron-setup/) provides app/plugin/window management primitives. [packages/electron-ipcx/README.md](packages/electron-ipcx/README.md) documents IPC with renderer callbacks.
+- [packages/wscrcpy/](packages/wscrcpy/) is a self-contained Vue + TS module built from `src/` (tsdown + unplugin-vue, declarations via vue-tsc). Two process-scoped entries: the package root exports the renderer-facing API (`Wscrcpy` component, composables, core helpers/types), and `@escrcpy/wscrcpy/main` exports the main-process ByteBridge factory — never import the root from main or `./main` from a renderer. `service/bridge/` is a thin main-process TCP ⇄ MessagePort pump; `src/stack/` owns the full protocol stack inside each window; `src/core/runtime.ts` routes every wscrcpy channel to the local stack. Preserve the public signatures and the `DeviceTarget = 'all' | 'primary' | string | string[]` contract; business code stays untouched across internal changes.
+- [packages/madb/](packages/madb/) is an MCP server for AI agent Android device control via ADB and yadb (32 tools). See its [AGENTS.md](packages/madb/AGENTS.md).
+- [packages/adbx/](packages/adbx/) is an injected adbkit capability layer; it prefers yadb when available and falls back to standard ADB.
+- [packages/shared/](packages/shared/) contains platform-neutral utilities shared across workspace packages.
+- [packages/unocss-preset-shades/](packages/unocss-preset-shades/) is an UnoCSS preset that generates color shades from a base color.
 
 ## Commands
 
@@ -29,18 +39,18 @@ There is no repo-wide test script today. For changes, run the smallest meaningfu
 
 ## Frontend Patterns
 
-- Vue code uses Vue 3 Composition API with `<script setup>` and auto-imported Vue, VueUse, Pinia, router, `definePage`, and `t` globals from [desktop/src/plugins/internal.js](../desktop/src/plugins/internal.js) and [eslint.config.js](../eslint.config.js).
-- Use existing aliases from [desktop/vite.config.js](../desktop/vite.config.js): `$`, `$root`, `$docs`, `$renderer`, `$electron`, `$control`, `$explorer`, `$copilot`, `$terminal`, `$automation`, and `$mirror`.
-- File-based routes live in [desktop/src/views/](../desktop/src/views/) and exclude nested `components` folders.
-- Pinia stores live in [desktop/src/store/](../desktop/src/store/), with persisted state and `window.$preload.store` for electron-store integration. See [desktop/src/store/device/index.js](../desktop/src/store/device/index.js) for the main pattern.
-- Styling uses UnoCSS utilities and project presets from [desktop/uno.config.js](../desktop/uno.config.js). Prefer local utility/style patterns over introducing new UI systems.
+- Vue code uses Vue 3 Composition API with `<script setup>` and auto-imported Vue, VueUse, Pinia, router, `definePage`, and `t` globals from [desktop/src/plugins/internal.js](desktop/src/plugins/internal.js) and [eslint.config.js](eslint.config.js).
+- Use existing aliases from [desktop/vite.config.js](desktop/vite.config.js): `$`, `$root`, `$docs`, `$renderer`, `$electron`, `$control`, `$explorer`, `$copilot`, `$terminal`, `$automation`, and `$mirror`.
+- File-based routes live in [desktop/src/views/](desktop/src/views/) and exclude nested `components` folders.
+- Pinia stores live in [desktop/src/store/](desktop/src/store/), with persisted state and `window.$preload.store` for electron-store integration. See [desktop/src/store/device/index.js](desktop/src/store/device/index.js) for the main pattern.
+- Styling uses UnoCSS utilities and project presets from [desktop/uno.config.js](desktop/uno.config.js). Prefer local utility/style patterns over introducing new UI systems.
 
 ## Electron And IPC
 
 - Use regular `ipcRenderer.invoke` / `ipcMain.handle` for simple request-response channels.
 - Use `ipcxRenderer.invoke` and `ipcxMain.handle` from `@escrcpy/electron-ipcx` when callbacks or functions must cross the renderer-main boundary.
 - Keep preload exposure minimal and routed through existing middleware; renderer code should use `window.$preload` surfaces rather than importing Electron main-process modules.
-- External binary paths for scrcpy, adb, and gnirehtet are resolved through [desktop/electron/configs/which/](../desktop/electron/configs/which/) with electron-store/user-path fallbacks. Do not hardcode platform paths.
+- External binary paths for scrcpy, adb, and gnirehtet are resolved through [desktop/electron/configs/which/](desktop/electron/configs/which/) with electron-store/user-path fallbacks. Do not hardcode platform paths.
 
 ## i18n
 
@@ -51,8 +61,8 @@ There is no repo-wide test script today. For changes, run the smallest meaningfu
 ## Gotchas
 
 - In `desktop/electron/middleware/scrcpy`, never resolve a ready Promise with the scrcpy process object directly. It is thenable-like and Promise resolution can adopt it, causing `resolveOnReady` to hang; resolve with plain data or `undefined`.
-- Turbo disables caching for Electron packaging in [turbo.json](../turbo.json). Do not assume packaging output is incremental or cache-backed.
-- Native dependencies such as `sharp`, Electron, Vite, tsdown, and TypeScript are pinned/overridden in [pnpm-workspace.yaml](../pnpm-workspace.yaml); change them deliberately.
+- Turbo disables caching for Electron packaging in [turbo.json](turbo.json). Do not assume packaging output is incremental or cache-backed.
+- Native dependencies such as `sharp`, Electron, Vite, tsdown, and TypeScript are pinned/overridden in [pnpm-workspace.yaml](pnpm-workspace.yaml); change them deliberately.
 - Audio in wscrcpy is intentionally opt-in by default. When audio and control are both enabled, `createScrcpyOptions` (packages/wscrcpy/src/options.ts) defaults `clipboardAutosync` to `false` because clipboard device messages can destabilize the controller while streams keep running; an explicit user preference always wins. Do not gate audio playback on the host platform — WebCodecs + Web Audio work identically on Windows/macOS/Linux.
 - Wscrcpy defaults to forward tunnel mode (`tunnelForward: true` in createScrcpyOptions). Reverse mode assigns video/audio/control by TCP accept order, but the adb server forwards the device's connections concurrently and may deliver them out of order on Windows, swapping the control and audio sockets (audio hangs forever, control writes are silently discarded). Forward mode identifies each stream by ADB protocol local-id, which removes the race.
 - The desktop app is mostly JavaScript/JSDoc, while workspace packages may be TypeScript. Do not add broad strict TS assumptions to the desktop renderer/main app.
@@ -60,8 +70,15 @@ There is no repo-wide test script today. For changes, run the smallest meaningfu
 
 ## Documentation Links
 
-- [develop.md](../develop.md) - developer setup, architecture, and contribution basics.
-- [README.md](../README.md), [README-CN.md](../README-CN.md), and [README-RU.md](../README-RU.md) - user-facing project overview.
-- [packages/electron-setup/README.md](../packages/electron-setup/README.md) - Electron plugin/window framework.
-- [packages/electron-ipcx/README.md](../packages/electron-ipcx/README.md) - function-friendly IPC contract.
-- [docs/en/](../docs/en/) and [docs/zhHans/](../docs/zhHans/) - VitePress product documentation.
+- [develop.md](develop.md) - developer setup, architecture, and contribution basics.
+- [README.md](README.md), [README-CN.md](README-CN.md), and [README-RU.md](README-RU.md) - user-facing project overview.
+- [packages/electron-setup/README.md](packages/electron-setup/README.md) - Electron plugin/window framework.
+- [packages/electron-ipcx/README.md](packages/electron-ipcx/README.md) - function-friendly IPC contract.
+- [docs/en/](docs/en/) and [docs/zhHans/](docs/zhHans/) - VitePress product documentation.
+
+<!-- project-memory:start -->
+
+## Project continuity
+
+Read CONTEXT.md and its named canonical notes as relevant. Use ICM for direction, Obsidian for durable memory, and Graphify for code relationships when useful. After meaningful work, update status and link source-backed topics through the project Connections map. Preserve existing project conventions.
+<!-- project-memory:end -->
