@@ -8,6 +8,15 @@ export function validateDeviceSerial(serial: string): string {
   return serial
 }
 
+/** Accept an Android application ID, including the framework's special ID. */
+export function validatePackageName(packageName: string): string {
+  if (typeof packageName !== 'string' || packageName.length > 255
+    || (packageName !== 'android' && !/^[a-z]\w*(?:\.[a-z]\w*)+$/i.test(packageName))) {
+    throw new TypeError('A valid Android package identifier is required')
+  }
+  return packageName
+}
+
 /**
  * Dangerous command patterns that should be blocked by default.
  * Each entry is a regex tested against the full command string.

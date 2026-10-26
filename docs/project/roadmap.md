@@ -55,6 +55,8 @@ In progress: user requested runtime/supply-chain security as a first-class requi
 
 ### Phase 3 — application management
 
+In progress: inspect and harden reused package primitives before adding the library UI. Package syntax/target validation alone does not fulfill safe uninstall; user selection, current status and confirmation remain required.
+
 - [ ] Verify and reuse existing listing, launch and install paths; build a coherent library and explicit result/confirmation flows.
 - [ ] Add missing management operations only after inspecting their existing callers/wrappers.
 - [ ] As each path is built or hardened, validate package identifiers, Android user IDs and explicit target serials; test host arguments and any device-shell composition. No unchecked raw command construction in a new ordinary UI action.

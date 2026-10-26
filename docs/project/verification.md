@@ -110,7 +110,6 @@ An earlier package inspection found **34 entries from the prior baseline build**
 
 Verified artifact: `desktop/dist-release/security-verified/Escrcpy-3.3.1-win-portable-x64.exe`, **114,031,703 bytes**, SHA-256 `e0fac46bec2971f5314b6de602c98a5b7d88e11916838b6a0dc7e8e2d2403545`. Authenticode status: **NotSigned** despite builder signing-step log messages. Packaging log: ignored `.baseline-logs/security-portable-verified.log`. No new launch, live mirror or input result is claimed for this file.
 
-
 ## 26 October 2026 — connection workspace checkpoint
 
 Source: connection workspace changes on `feat/secure-device-operations`, based on `1c820443977c016c621d42dcb7ba0108a8aaa0ea`; reviewed in the existing draft PR #1. This is a Phase 2 increment, not a full-roadmap completion or release.
@@ -134,8 +133,16 @@ The wireless list returned positional fields shifted by an omitted path column (
 
 Remaining: fresh changed-artifact mirroring/input verification, fuller USB/wireless authorization/reconnect coverage and embedded-mirroring decision. Broad renderer/IPC privileges, Android package/path mutation boundaries, remaining advisory/provenance and sharing gates are still open. No security-complete or public-release-ready claim.
 
-
-Final portable packaging: `pnpm --filter escrcpy exec electron-builder --config=../.local-tools/electron-builder-connection.config.mjs --win portable --x64 --publish=never` exited 0. The ignored wrapper only changes the output directory. Artifact `desktop/dist-release/connection-checkpoint/Escrcpy-3.3.1-win-portable-x64.exe`: **114,041,227 bytes**, SHA-256 `4976a39a58129ae00614f8c64c85dc5411dbe3ec20b6bf2988acb1fec5817281`, Authenticode **NotSigned**. A copied launch-test artifact has the same SHA-256. No executable uploaded or release published. `pnpm lint` exited 0 after final changes (`connection-lint-complete.log`).
-
+Final portable packaging: `pnpm --filter escrcpy exec electron-builder --config=../.local-tools/electron-builder-connection.config.mjs --win portable --x64 --publish=never` exited 0. The ignored wrapper only changes the output directory. Artifact `desktop/dist-release/connection-checkpoint/Escrcpy-3.3.1-win-portable-x64.exe`: **114,041,227 bytes**, SHA-256 `4976a39a58129ae00614f8c64c85dc5411dbe3ec20b6bf2988acb1fec5817281`, Authenticode **NotSigned**. A copied launch-test artifact has the same SHA-256. No executable uploaded or release published. The source lint check exited 0 before this final evidence text was appended (`connection-lint-complete.log`); the later whole-tree check and Markdown cleanup are recorded below.
 
 Final archive inspection with installed `@electron/asar`: 260 entries, zero prior-output entries, zero foreign-platform node-pty entries. Launched the matching copied portable itself, not only the unpacked executable. With automatic wireless connection disabled in its disposable profile, two synthetic offline USB IDs verified long-label wrapping at 800px, readable serial detail, serial-based filtering and keyboard selection of the second target. The summary changed to that exact target and kept mirroring disabled; hidden batch actions disappeared from the accessibility tree. Devices, Preferences and About navigation rendered. These are UI fixtures, not two-phone hardware evidence; no fixture device command was sent.
+
+## 26 October 2026 — Phase 3 package-input foundation
+
+Source: next increment after connection checkpoint `f91b6c6893a5901c46dd46f495ef72836e9b9b6f`. Inspected existing app-selector/start-app, adbx and ADB wrapper paths before adding management operations. Existing installed checks and uninstall now validate the explicit serial and Android package identifier **before** looking up a device. The 255-character bound is local policy; identifier syntax follows the official Android guidance linked in the technical plan, with the framework `android` exception. No new dependency or device mutation was used for this increment.
+
+Eleven malformed-package cases were observed failing against the old wrapper, then passing after validation. Further tests cover trailing line separators, NUL, non-string input, invalid serials, normal uppercase/underscore names, framework installed checks and captured-target A isolation after selection changes to B. All **145 tests across 15 files** pass; all five package typechecks and six dependency-ordered build tasks pass. Logs: ignored `.baseline-logs/package-boundary-red.log`, `package-boundary-green.log`, `package-boundary-suite.log`, `package-boundary-types.log`, `package-boundary-build.log`.
+
+This is low-level input validation, not a completed safe-uninstall feature. Android user selection, fresh installed/system status, captured-target confirmation/cancellation, new ordinary UI/service operations and disposable-APK hardware tests remain Phase 3 work. The retained connection portable is built from the preceding source checkpoint and does not contain this later wrapper guard.
+
+Whole-tree lint initially failed on two Markdown spacing issues added to the preceding evidence text; these were formatted and `pnpm lint` then exited 0 (`package-boundary-lint-final.log`). The read-only reviewer found no concrete issue in the package guard, caller compatibility or promise/error behavior. No APK was uninstalled or installed on hardware.

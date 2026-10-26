@@ -4,7 +4,7 @@ Goal: Build a reliable local-first Windows x64 Android management application fr
 
 ## Current state
 
-Current task: continue the approved roadmap on `feat/secure-device-operations`, beginning with Phase 2 and security hardening. The verified baseline source is published on the selected repository's `main`; upstream push is disabled. An active goal covers the full roadmap, with distribution conditional on audience/release gates. Read roadmap for scope, verification for results and phase-2-plan for implementation order.
+Current task: continue the approved roadmap on `feat/secure-device-operations`, with Phase 2 hardware/embedded follow-ups and Phase 3 application-management hardening. The verified baseline source is published on the selected repository's `main`; upstream push is disabled. An active goal covers the full roadmap, with distribution conditional on audience/release gates. Read roadmap for scope, verification for results and technical plan for feature boundaries.
 
 Connection workspace: layout/serial-searchable selector, bounded refresh, tracker ownership and a narrow read-only device-info service are implemented and automatically tested. A packaged preview has rendered both themes and read live POCO metadata over wireless; this is separate from mirroring/input verification. The current source checkpoint and remaining hardware/security limits are recorded in the verification log. Resume from `.superpowers/sdd/roadmap/progress.md`; do not carry the old baseline's hardware pass forward to a changed artifact.
 

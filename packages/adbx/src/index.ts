@@ -2,7 +2,7 @@ import { createHash } from 'node:crypto'
 import { existsSync, readFileSync, statSync } from 'node:fs'
 import { writeFile } from 'node:fs/promises'
 import adbkit from '@devicefarmer/adbkit'
-import { getAdbUtil, shellEscape, validateDeviceSerial } from '@escrcpy/shared'
+import { getAdbUtil, shellEscape, validateDeviceSerial, validatePackageName } from '@escrcpy/shared'
 import type { AdbxOptions, IAdbClient, ShellOptions } from './types.js'
 
 const AdbUtil = getAdbUtil(adbkit) as typeof adbkit.Adb.util
@@ -127,8 +127,16 @@ export function createAdbx(options: AdbxOptions) {
     push: transfer,
     pull: (serial: string, remote: string) => adb.getDevice(validateDeviceSerial(serial)).pull(remote),
     install: (serial: string, path: string) => adb.getDevice(validateDeviceSerial(serial)).install(path),
-    uninstall: (serial: string, pkg: string) => adb.getDevice(validateDeviceSerial(serial)).uninstall(pkg),
-    isInstalled: (serial: string, pkg: string) => adb.getDevice(validateDeviceSerial(serial)).isInstalled(pkg),
+    uninstall: (serial: string, pkg: string) => {
+      validateDeviceSerial(serial)
+      validatePackageName(pkg)
+      return adb.getDevice(serial).uninstall(pkg)
+    },
+    isInstalled: (serial: string, pkg: string) => {
+      validateDeviceSerial(serial)
+      validatePackageName(pkg)
+      return adb.getDevice(serial).isInstalled(pkg)
+    },
     input,
     screenshot: {
       async capture(serial: string): Promise<Buffer> {
