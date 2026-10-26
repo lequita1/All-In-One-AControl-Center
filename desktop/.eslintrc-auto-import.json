@@ -385,6 +385,8 @@
     "useAppUpdate": true,
     "useCssSupports": true,
     "useElementOverflow": true,
-    "useDeviceInfo": true
+    "useDeviceInfo": true,
+    "useApplications": true,
+    "useDeviceConnection": true
   }
 }

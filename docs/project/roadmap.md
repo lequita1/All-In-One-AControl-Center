@@ -55,7 +55,7 @@ In progress: user requested runtime/supply-chain security as a first-class requi
 
 ### Phase 3 — application management
 
-In progress: inspect and harden reused package primitives before adding the library UI. Package syntax/target validation alone does not fulfill safe uninstall; user selection, current status and confirmation remain required.
+In progress: initial library, per-user package inventory and guarded launch/force-stop/user-app removal are implemented and automatically tested. Keep populated visual and disposable-APK hardware verification distinct from implementation. Names/icons, install/splits, details/permissions, export/batches and protected enable/disable/recovery remain required increments. Contracts: [Phase 3 notes](phase-3-plan.md); results: [verification](verification.md).
 
 - [ ] Verify and reuse existing listing, launch and install paths; build a coherent library and explicit result/confirmation flows.
 - [ ] Add missing management operations only after inspecting their existing callers/wrappers.
@@ -111,6 +111,8 @@ Use an **in-process mock transport**, not a full fake ADB server initially. Exis
 Fixture has serials A and B, separate call logs/state, configurable stream/error/transfer completion, and disconnect events where consumed. `getDevice(serial)` rejects absent/unknown targets and returns that serial's fixture. Test A selected at operation start then UI selection switches to B: reads/mutations/cancel/retry remain scoped to A and B's log remains empty. Mock tracker/transport behavior for unauthorized/disconnect cases rather than rely on timing sleeps.
 
 For service/preload paths not currently injected, introduce the smallest narrow seam while touching that feature. For host scrcpy/ADB launch, mock the child-process boundary and assert executable/argv, `shell: false`, serial and cancellation ownership. Run tests without executing real device commands.
+
+The application service's pre-dispatch cancellation also uses a tiny ephemeral loopback ADB fixture with the installed parser/framing. Exercise handshake cancellation and late replies on an isolated port; do not replace or stop the shared phone service to test this boundary.
 
 Adversarial path/package fixtures assert that quoted input cannot add another command. Mock assertions prove command construction, not actual Android-shell parsing; add a harmless scratch-filename hardware check in Phase 4. Invalid package identifiers reject before transport access. Ordinary UI actions cannot use the developer terminal as a bypass.
 

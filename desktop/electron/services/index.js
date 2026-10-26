@@ -1,3 +1,4 @@
+export { default as appManagementService } from './app-management/index.js'
 export { default as contextMenuService } from './context-menu/index.js'
 export { default as deviceInfoService } from './device-info/index.js'
 export { default as edgerService } from './edger/index.js'

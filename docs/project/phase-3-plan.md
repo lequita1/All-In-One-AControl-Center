@@ -1,0 +1,21 @@
+# Phase 3 implementation notes
+
+Implements the approved application-manager requirements in the [brief](project-brief.md), [roadmap](roadmap.md) and [technical plan](technical-plan.md). Roadmap owns scope/status; verification owns observed results. Execute inline with the existing test-first workflow, then request a fresh read-only review. This note specifies contracts rather than duplicating milestone checklists.
+
+## Service and safety contract
+
+Add `desktop/electron/services/app-management/{index,service}.js` with an injected ADB client and native confirmation callback. Reuse shared serial/package validation and shell escaping. Add strict numeric Android-user validation locally where consumed. No new dependency, raw renderer shell API or root requirement. Extract managed-main-frame/page validation from device-info into a shared service helper, retaining its existing rejection tests.
+
+Preload exposes only `apps.users(serial)`, `apps.list({serial,userId})`, and `apps.perform({serial,userId,packageName,action})`. Allow actions launch, force-stop and uninstall; reject unknown fields that would supply a raw command or override a target. Validate and copy the tuple before awaiting anything. Each device mutation has one active owner; release the lock on failure/cancellation. Read-only inventory may run concurrently.
+
+Use bounded shell reads with an unpredictable status trailer to verify exit status; destroy stalled/oversized streams and discard late responses. Inventory reads real Android users, installed package/version data and separate system/user/disabled sets. Missing or failed classification is an error, not an empty successful library. Preserve version codes as strings to avoid numeric precision loss. Reject malformed device-derived identifiers before using them in another command.
+
+Launch resolves a launcher component for that exact package/user, validates it, and starts it on the existing phone screen. Force-stop and uninstall initially accept user-installed packages only. Native confirmation names the captured serial, package, Android user and consequence. Cancellation sends no mutation. After confirmation, recheck device authorization, user existence, installed classification and version; changed identity/version requires a fresh confirmation. Uninstall uses the confirmed version and verifies absence afterward. Timeout/failure after a mutation reports uncertain or failed outcome without automatic retry. No system debloating through these actions.
+
+Service tests replace external I/O only. Cover unauthorized/wrong IPC senders, invalid DTOs before transport, classification and command exit errors, absent users/packages, timeout/output bounds, malicious device package/activity output, cancelled/accepted confirmation, changes while confirmation is open, A/B isolation, concurrent mutation ownership and failed/uncertain outcomes. First observe failures, implement, run focused tests and full suite, then dependency-ordered build/typechecks/lint.
+
+## Library presentation
+
+Add an Applications route to the existing sidebar and use the top-bar selected phone. An Android-user selector and search/type/status filters operate on the returned inventory. Keep package identity visible; enrich names/icons only from actually available safe sources, with honest fallbacks. Show loading, permission/disconnect/error, empty/filter-empty and completed/cancelled action states. Disable commands while the chosen tuple is unavailable or stale. Capture action context before any dialog/request; late results cannot populate a newly selected phone/user. Scope-dispose pending view responses. Keep accessible keyboard controls and existing Element Plus/theme/layout conventions.
+
+Verify stale-response/target behavior before rendering. Inspect the actual packaged page in both themes and narrow/wide windows, including long identifiers. Live listing and disposable-APK launch/install/removal checks remain separate hardware evidence. Reuse and harden existing install/launch paths rather than assuming their presence proves behavior. Split install, package details/permissions, export, batches and protected enable/disable/recovery remain subsequent Phase 3 increments in the roadmap; this service does not fulfill them by itself.

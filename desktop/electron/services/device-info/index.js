@@ -1,8 +1,7 @@
-import path from 'node:path'
-import { pathToFileURL } from 'node:url'
 import { ipcMain } from 'electron'
 import { Adb } from '@devicefarmer/adbkit'
 import { parseBatteryDump, validateDeviceSerial } from '@escrcpy/shared'
+import { assertMainApplication } from '../helpers/main-frame.js'
 
 function beforeDeadline(promise, milliseconds, onTimeout = () => {}) {
   let timer
@@ -102,24 +101,7 @@ export async function readDeviceInfo(client, serial, { timeout = 5000 } = {}) {
 
 export function createDeviceInfoHandler(mainApp, client) {
   return async (event, serial) => {
-    const window = mainApp.getMainWindow()
-    if (!window || window.isDestroyed() || event.sender !== window.webContents || event.senderFrame !== event.sender.mainFrame) {
-      throw new Error('Device information request is not from the main application frame')
-    }
-    const actual = new URL(event.senderFrame.url)
-    actual.hash = ''
-    actual.search = ''
-    let allowed
-    if (mainApp.devRendererDir) {
-      const root = new URL(`${mainApp.devRendererDir.replace(/\/$/, '')}/`)
-      allowed = actual.href === root.href || actual.href === new URL('index.html', root).href
-    }
-    else {
-      allowed = actual.href === pathToFileURL(path.resolve(mainApp.rendererDir, 'index.html')).href
-    }
-    if (!allowed) {
-      throw new Error('Device information request is not from the application page')
-    }
+    assertMainApplication(mainApp, event)
     return readDeviceInfo(client, serial)
   }
 }

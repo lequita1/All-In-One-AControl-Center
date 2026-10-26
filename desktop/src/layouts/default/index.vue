@@ -38,13 +38,17 @@ import AppHeader from '$/components/app-header/index.vue'
 import QuickBar from '$/components/quick-bar/index.vue'
 import AppUpdateDialog from '$/hooks/use-app-update/dialog.vue'
 import { deviceStatus } from '$/dicts/device/index.js'
+import { useDeviceConnection } from '$/hooks/use-device-connection/index.js'
 
 defineOptions({ inheritAttrs: false })
 const deviceStore = useDeviceStore()
+const connection = useDeviceConnection(deviceStore)
+provide('refreshDevices', connection.refresh)
 const router = useRouter()
 const route = useRoute()
 const routes = [
   { path: '/device', label: 'menus.device.name', icon: 'Cellphone' },
+  { path: '/applications', label: 'apps.title', icon: 'Box' },
   { path: '/preference', label: 'menus.preference.name', icon: 'Setting' },
   { path: '/about', label: 'menus.about.name', icon: 'InfoFilled' },
 ]

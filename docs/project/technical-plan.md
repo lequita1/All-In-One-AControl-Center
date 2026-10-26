@@ -34,6 +34,8 @@ Reuse the existing scrcpy application listing/launch and adbkit install primitiv
 
 The app library's ordinary mutations need narrow main-process operations with an explicit captured serial, package and numeric Android user. Confirm destructive actions against that same tuple, refresh current installed/system status before applying them, and never retry against another selected device. User-installed applications are the initial removal scope. System enable/disable needs capability checks, a protected-package policy and an explicit recovery path; the presence of a raw transport method does not establish safe debloating. Install/export paths and cancellation are separate host/device file boundaries. Existing arbitrary developer shell access is not the library's implementation API.
 
+Application commands own their TCP socket before the ADB handshake and cancel that socket on expiry. Check frame authority at dispatch, after transport setup. Reuse the pinned adbkit 3.3.8 parser/command framing through the contained transport adapter; its internal imports must be revalidated with the local protocol tests when that pin changes. A timeout after actual dispatch reports an uncertain outcome and never triggers an automatic mutation retry.
+
 ## Upstream maintenance tradeoff
 
 This is a maintained derivative with increasing divergence. Rewriting privileged middleware will make automatic merges more expensive; it does not prove all upstream updates become impractical. Preserve public interfaces when reasonable, isolate changed files, and prefer selective upstream fixes after inspection. Reassess the cost at each relevant change. No promise of effortless upstream merges, and no unconditional commitment to a complete rewrite.

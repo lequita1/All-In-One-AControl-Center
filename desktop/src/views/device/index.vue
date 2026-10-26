@@ -168,7 +168,6 @@ import { uniqBy } from 'lodash-es'
 import { sleep } from '$/utils/index.js'
 
 import DeviceSummary from './components/device-summary/index.vue'
-import { createDeviceDiscovery } from './helpers/discovery.js'
 import BatchActions from './components/batch-actions/index.vue'
 import ControlBar from '$/components/control-bar/index.vue'
 import MirrorAction from './components/mirror-action/index.vue'
@@ -234,14 +233,7 @@ function remarkFilterMethod(value, row, column) {
   return target === value
 }
 
-async function getDeviceData() {
-  try {
-    await deviceStore.getList()
-  }
-  catch {
-    // The store retains the last snapshot and exposes a recoverable error.
-  }
-}
+const handleRefresh = inject('refreshDevices')
 
 function filterMethod(value, row, column) {
   const property = column.property
@@ -299,31 +291,14 @@ function handleConnect(...args) {
 
 function onAutoConnected() {}
 
-const discovery = createDeviceDiscovery({
-  subscribe: callback => window.$preload.adb.watch(callback),
-  onChange: getDeviceData,
-  onError: () => { deviceStore.error = window.t('connection.serviceError') },
-})
-
-async function handleRefresh() {
-  await getDeviceData()
-  await discovery.start()
-}
-
-onMounted(async () => {
-  await getDeviceData()
-  await discovery.start()
-})
-
 onBeforeUnmount(() => {
-  discovery.stop()
   clearTimeout(autoMirrorTimer)
 })
 
 let activated = false
 onActivated(() => {
   if (activated)
-    getDeviceData()
+    handleRefresh()
   activated = true
 })
 </script>
