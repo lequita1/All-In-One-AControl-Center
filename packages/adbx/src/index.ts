@@ -2,7 +2,7 @@ import { createHash } from 'node:crypto'
 import { existsSync, readFileSync, statSync } from 'node:fs'
 import { writeFile } from 'node:fs/promises'
 import adbkit from '@devicefarmer/adbkit'
-import { getAdbUtil, shellEscape } from '@escrcpy/shared'
+import { getAdbUtil, shellEscape, validateDeviceSerial, validatePackageName } from '@escrcpy/shared'
 import type { AdbxOptions, IAdbClient, ShellOptions } from './types.js'
 
 const AdbUtil = getAdbUtil(adbkit) as typeof adbkit.Adb.util
@@ -36,7 +36,7 @@ class YadbRunner {
     const checksum = createHash('md5').update(readFileSync(path)).digest('hex')
     if (this.pushed.get(serial) === checksum)
       return
-    const device = this.adb.getDevice(serial)
+    const device = this.adb.getDevice(validateDeviceSerial(serial))
     const transfer = await device.push(path, '/data/local/tmp/yadb')
     await new Promise<void>((resolve, reject) => {
       transfer.once('end', resolve)
@@ -47,7 +47,7 @@ class YadbRunner {
 
   private async shell(serial: string, args: string[], raw: boolean): Promise<string | Buffer> {
     const command = `app_process -Djava.class.path=/data/local/tmp/yadb /data/local/tmp com.ysbing.yadb.Main ${args.map(value => `'${shellEscape(value)}'`).join(' ')}`
-    const result = await AdbUtil.readAll(await this.adb.getDevice(serial).shell(command) as never)
+    const result = await AdbUtil.readAll(await this.adb.getDevice(validateDeviceSerial(serial)).shell(command) as never)
     return raw ? result : result.toString().trim()
   }
 }
@@ -60,15 +60,15 @@ export function createAdbx(options: AdbxOptions) {
     // discarded by the ADB protocol layer. When opts.stderr is true, append 2>&1
     // to merge stderr into stdout so callers can see error messages.
     const cmd = opts?.stderr ? `${command} 2>&1` : command
-    return (await AdbUtil.readAll(await adb.getDevice(serial).shell(cmd) as never)).toString().trim()
+    return (await AdbUtil.readAll(await adb.getDevice(validateDeviceSerial(serial)).shell(cmd) as never)).toString().trim()
   }
 
   async function screencap(serial: string): Promise<Buffer> {
-    return AdbUtil.readAll(await adb.getDevice(serial).screencap() as never)
+    return AdbUtil.readAll(await adb.getDevice(validateDeviceSerial(serial)).screencap() as never)
   }
 
   async function transfer(serial: string, local: string, remote: string): Promise<string> {
-    const job = await adb.getDevice(serial).push(local, remote)
+    const job = await adb.getDevice(validateDeviceSerial(serial)).push(local, remote)
     await new Promise<void>((resolve, reject) => {
       job.once('end', resolve)
       job.once('error', reject)
@@ -121,14 +121,22 @@ export function createAdbx(options: AdbxOptions) {
     adb,
     yadb,
     shell,
-    getDevice: (serial: string) => adb.getDevice(serial),
+    getDevice: (serial: string) => adb.getDevice(validateDeviceSerial(serial)),
     getDevices: () => adb.listDevicesWithPaths(),
     screencap,
     push: transfer,
-    pull: (serial: string, remote: string) => adb.getDevice(serial).pull(remote),
-    install: (serial: string, path: string) => adb.getDevice(serial).install(path),
-    uninstall: (serial: string, pkg: string) => adb.getDevice(serial).uninstall(pkg),
-    isInstalled: (serial: string, pkg: string) => adb.getDevice(serial).isInstalled(pkg),
+    pull: (serial: string, remote: string) => adb.getDevice(validateDeviceSerial(serial)).pull(remote),
+    install: (serial: string, path: string) => adb.getDevice(validateDeviceSerial(serial)).install(path),
+    uninstall: (serial: string, pkg: string) => {
+      validateDeviceSerial(serial)
+      validatePackageName(pkg)
+      return adb.getDevice(serial).uninstall(pkg)
+    },
+    isInstalled: (serial: string, pkg: string) => {
+      validateDeviceSerial(serial)
+      validatePackageName(pkg)
+      return adb.getDevice(serial).isInstalled(pkg)
+    },
     input,
     screenshot: {
       async capture(serial: string): Promise<Buffer> {
@@ -175,11 +183,11 @@ export function createAdbx(options: AdbxOptions) {
     },
     fileManager: {
       push: transfer,
-      pull: (serial: string, remote: string) => adb.getDevice(serial).pull(remote),
+      pull: (serial: string, remote: string) => adb.getDevice(validateDeviceSerial(serial)).pull(remote),
       async pullBuffer(serial: string, remote: string): Promise<Buffer> {
-        return AdbUtil.readAll(await adb.getDevice(serial).pull(remote) as never)
+        return AdbUtil.readAll(await adb.getDevice(validateDeviceSerial(serial)).pull(remote) as never)
       },
-      readdir: (serial: string, dirPath: string) => adb.getDevice(serial).readdir(dirPath),
+      readdir: (serial: string, dirPath: string) => adb.getDevice(validateDeviceSerial(serial)).readdir(dirPath),
     },
     deviceInfo: {
       getScreenSize,

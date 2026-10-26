@@ -1,7 +1,10 @@
 import { spawn } from 'node:child_process'
-import quote from 'shell-quote'
+import { promisify } from 'node:util'
 import treeKill from '@magda/tree-kill'
 import { setupEnvPath } from '$electron/process/helper.js'
+import { parseArguments } from './arguments.js'
+
+const terminateTree = promisify(treeKill)
 
 /**
  * Executes a shell command or array of arguments as a child process, with
@@ -12,7 +15,7 @@ import { setupEnvPath } from '$electron/process/helper.js'
  * @param {Object} [options] - Options to customize command execution.
  * @param {string} [options.cwd] - Current working directory for the child process.
  * @param {Object} [options.env] - Environment variables to merge with process.env.
- * @param {boolean} [options.shell] - Whether to execute the command inside a shell.
+ * @param {false} [options.shell] - Host shell execution is prohibited.
  * @param {(chunk: string|Buffer, child: import('child_process').ChildProcess) => void} [options.stdout] - Callback for stdout data chunks.
  * @param {(chunk: string|Buffer, child: import('child_process').ChildProcess) => void} [options.stderr] - Callback for stderr data chunks.
  * @param {string|null} [options.encoding] - Encoding to apply to stdout and stderr (e.g., 'utf8'). If null, returns Buffers.
@@ -22,7 +25,7 @@ import { setupEnvPath } from '$electron/process/helper.js'
  *   Returns the spawned child process object augmented with `then`, `catch`, `finally` (promise methods)
  *   and a `kill()` method to terminate the process.
  *
- * @throws {Error} If the process exits with a non-zero code (except exit code 1 on Windows), the returned promise rejects with an error containing `stdout`, `stderr`, `exitCode`, `signal`, and `command`.
+ * @throws {Error} A non-zero exit rejects with output and exit details.
  *
  */
 export function sheller(command, options = {}) {
@@ -36,17 +39,12 @@ export function sheller(command, options = {}) {
     ...restOptions
   } = options
 
-  let cmd = ''
-  let cmdArgs = []
-
   if (shell) {
-    cmd = command
-    cmdArgs = []
+    throw new TypeError('Host shell execution is not permitted')
   }
-  else {
-    const parsed = Array.isArray(command) ? command : quote.parse(command)
-    cmd = parsed[0]
-    cmdArgs = parsed.slice(1)
+  const [cmd, ...cmdArgs] = parseArguments(command)
+  if (!cmd) {
+    throw new TypeError('An executable is required')
   }
 
   // Ensure PATH is properly set up
@@ -55,9 +53,9 @@ export function sheller(command, options = {}) {
   const child = spawn(cmd, cmdArgs, {
     cwd,
     env: { ...process.env, ...env },
-    shell,
     stdio: ['ignore', 'pipe', 'pipe'],
     ...restOptions,
+    shell: false,
   })
 
   const stdoutChunks = []
@@ -113,10 +111,10 @@ export function sheller(command, options = {}) {
   })
 
   const kill = async () => {
-    if (!child.pid) {
+    if (!Number.isInteger(child.pid) || child.pid <= 0 || child.exitCode != null || child.signalCode != null) {
       return false
     }
-    await treeKill(child.pid, 'SIGTERM')
+    await terminateTree(child.pid, 'SIGTERM')
   }
 
   const assignedChild = Object.assign(child, {

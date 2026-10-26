@@ -30,6 +30,13 @@ export function createMiddleware() {
     store,
     i18n,
     adb,
+    deviceInfo: { read: serial => electronAPI.ipcRenderer.invoke('device-info:read', serial) },
+    apps: {
+      users: serial => electronAPI.ipcRenderer.invoke('apps:users', serial),
+      list: request => electronAPI.ipcRenderer.invoke('apps:list', request),
+      perform: request => electronAPI.ipcRenderer.invoke('apps:perform', request),
+      install: request => electronAPI.ipcRenderer.invoke('apps:install', request),
+    },
     scrcpy,
     gnirehtet,
     search,

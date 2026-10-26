@@ -22,7 +22,9 @@ Destructive operations require target-specific confirmation and disposable-data 
 
 ## Known work
 
-Dependency remediation, inherited shell-string execution, broad renderer/preload privileges and mirror error handling are tracked work. Finding and fixing these is part of development, not a completed security claim. Archive extraction and bundled executables also need exact provenance and distribution review before shipping binaries.
+Dependency and Windows tool inspection evidence is in [security-intake.md](docs/project/security-intake.md). The current dependency audit retains one high-severity unpatched node-forge finding through an unused adbkit bridge API; it is not suppressed. Host process launch and mirroring lifecycle hardening have regression tests. Broad renderer/preload privileges, Android command construction and feature-specific boundaries remain tracked work, not a completed security claim. All bundled executables still need full provenance and redistribution review before shipping binaries.
+
+Custom mirroring options must use long names and cannot change the selected device. Legacy option strings reject shell operators, comments and expansion; code must pass titles/paths as literal array elements. Automatic app cleanup must never stop a shared ADB server. Reverse-tether relay cleanup is app-wide; multi-device tether behavior has not been hardware verified.
 
 Inherited GitHub release/mirror workflows are disabled. New automation must use reviewed triggers, minimal permissions, pinned actions and explicit release gates. Source pushes must not publish builds or sync to upstream services.
 

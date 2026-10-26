@@ -11,32 +11,31 @@ export function useMirrorAction() {
 
     loading.value = true
 
-    for (let index = 0; index < devices.length; index++) {
-      const item = devices[index]
-      await startMirror(item, { ...options, resolveOnReady: true })
-      await sleep()
+    try {
+      for (let index = 0; index < devices.length; index++) {
+        const item = devices[index]
+        await startMirror(item, { ...options, resolveOnReady: true })
+        await sleep()
+      }
     }
-
-    loading.value = false
+    finally {
+      loading.value = false
+    }
   }
 
   async function startMirror(item, options) {
     const deviceId = item?.id || item
 
-    const args = preferenceStore.scrcpyParameter(deviceId)
-
-    const mirroring = window.$preload.scrcpy.mirror(deviceId, {
-      title: deviceStore.getLabel(deviceId, 'mirror'),
-      args,
-      ...options,
-    })
-
     try {
-      await mirroring
+      const args = preferenceStore.scrcpyParameter(deviceId)
+      await window.$preload.scrcpy.mirror(deviceId, {
+        title: deviceStore.getLabel(deviceId, 'mirror'),
+        args,
+        ...options,
+      })
     }
     catch (error) {
-      console.error('useMirrorAction.mirror.args', args)
-      console.error('useMirrorAction.mirror.error', error)
+      ElMessage.warning(error?.message || window.t('connection.mirrorError'))
     }
   }
 

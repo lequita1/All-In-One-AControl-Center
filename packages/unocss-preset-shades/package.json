@@ -3,7 +3,7 @@
   "type": "module",
   "version": "3.3.1",
   "private": true,
-  "description": "🎨 A UnoCSS preset that automatically generates a full range of shades from light to dark based on a specified base color, injecting CSS variables and theme color configurations.",
+  "description": "\ud83c\udfa8 A UnoCSS preset that automatically generates a full range of shades from light to dark based on a specified base color, injecting CSS variables and theme color configurations.",
   "author": "viarotel",
   "homepage": "https://github.com/viarotel-org/escrcpy",
   "sideEffects": false,

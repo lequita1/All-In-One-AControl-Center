@@ -1,10 +1,14 @@
 # Android Control Center — Context
 
-Goal: Build a reliable local-first Windows x64 Android management application from audited public Escrcpy source, incrementally, with device safety and verified functionality; currently Phase 0 planning and repository readiness.
+Goal: Build a reliable local-first Windows x64 Android management application from inspected public Escrcpy source, incrementally, with device safety and verified functionality.
 
 ## Current state
 
-Current task: execute the user-approved lean personal-use baseline. Read roadmap for live scope/gates and verification log for results. Use chore/windows-baseline in the existing checkout. Origin is the selected user repository; upstream push is disabled. No publication is needed for local baseline work.
+Current task: continue the approved roadmap on `feat/secure-device-operations`, with Phase 2 hardware/embedded follow-ups and Phase 3 application-management hardening. The verified baseline source is published on the selected repository's `main`; upstream push is disabled. An active goal covers the full roadmap, with distribution conditional on audience/release gates. Read roadmap for scope, verification for results and technical plan for feature boundaries.
+
+Connection workspace: layout/serial-searchable selector, bounded refresh, tracker ownership and a narrow read-only device-info service are implemented and automatically tested. A packaged preview has rendered both themes and read live POCO metadata over wireless; this is separate from mirroring/input verification. The current source checkpoint and remaining hardware/security limits are recorded in the verification log. Resume from `.superpowers/sdd/roadmap/progress.md`; do not carry the old baseline's hardware pass forward to a changed artifact.
+
+Application library increment: selected-phone/Android-user inventory, filters, launcher, confirmed user-app force-stop/removal and native-selected single/compatible-split APK installation use narrow IPC and automated checks. Owned transport cancels before late dispatch and confirms authority after handshake; installation uses bounded snapshots, native fingerprint confirmation, remote hash verification and one explicit-user session. The earlier packaged disconnected UI was inspected; current install UI, populated/dark visual and disposable-APK hardware coverage remain pending. Names/icons, details/permissions, export and protected enable/disable are still Phase 3 work. See phase-3-plan and verification for exact contracts/limits.
 
 ## Task routes
 

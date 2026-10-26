@@ -1,6 +1,6 @@
 import fs from 'node:fs'
 import path from 'node:path'
-import { desktopPath, yadbPath } from '$electron/configs/index.js'
+import { desktopPath, getAdb, yadbPath } from '$electron/configs/index.js'
 import electronStore from '$electron/helpers/store/index.js'
 import { Adb } from '@devicefarmer/adbkit'
 import { createAdbx } from '@escrcpy/adbx'
@@ -8,6 +8,8 @@ import pLimit from 'p-limit'
 import dayjs from 'dayjs'
 import { ProcessManager } from '$electron/process/manager.js'
 import { sheller } from '$electron/helpers/shell/index.js'
+import { parseArguments, validateDeviceSerial } from '$electron/helpers/shell/arguments.js'
+import { adbEndpoint, pairingCode } from '$electron/helpers/shell/endpoint.js'
 import { parseBatteryDump } from './helpers/battery/index.js'
 import { ADBDownloader } from './helpers/downloader/index.js'
 import adbScanner, { MDNS_CONFIG, probeDeviceCandidates, scanMdnsDevices } from './helpers/scanner/index.js'
@@ -31,8 +33,8 @@ export function getAdbx() {
 }
 
 electronAPI.ipcRenderer.on('quit-before', () => {
-  client?.kill?.()
-  processManager.kill()
+  // The ADB server may belong to another application. Only stop our children.
+  processManager.kill().catch(error => console.warn(error.message))
 })
 
 electronStore.onDidChange('common.adbDir', async (...args) => {
@@ -43,7 +45,6 @@ electronStore.onDidChange('common.adbDir', async (...args) => {
   }
 
   try {
-    await client?.kill?.()
     await processManager.kill()
   }
   catch (error) {
@@ -59,8 +60,7 @@ function normalizeAdbError(error) {
 }
 
 async function shell(command) {
-  const adbProcess = sheller(`adb ${command}`, {
-    shell: true,
+  const adbProcess = sheller([getAdb(), ...parseArguments(command)], {
     encoding: 'utf8',
   })
 
@@ -85,7 +85,7 @@ async function kill(...params) {
 
 async function getDeviceIP(id) {
   try {
-    const { stdout } = await shell(`-s ${id} shell ip -f inet addr show wlan0`)
+    const { stdout } = await shell(['-s', validateDeviceSerial(id), 'shell', 'ip', '-f', 'inet', 'addr', 'show', 'wlan0'])
     const reg = /inet ([0-9.]+)\/\d+/
     const match = stdout.match(reg)
     const value = match[1]
@@ -141,6 +141,10 @@ async function watch(callback) {
 
   tracker.on('remove', (device) => {
     callback('remove', device)
+  })
+
+  tracker.on('change', (device) => {
+    callback('change', device)
   })
 
   tracker.on('end', (ret) => {
@@ -347,9 +351,7 @@ async function battery(id) {
 }
 
 async function pair(host, port, code) {
-  const address = port ? `${host}:${port}` : host
-
-  const { stderr, stdout } = await shell(`pair ${address} ${code}`)
+  const { stderr, stdout } = await shell(['pair', adbEndpoint(host, port), pairingCode(code)])
 
   if (stderr) {
     throw stderr
@@ -359,9 +361,7 @@ async function pair(host, port, code) {
 }
 
 async function connect(host, port) {
-  const address = port ? `${host}:${port}` : host
-
-  const { stderr, stdout } = await shell(`connect ${address}`)
+  const { stderr, stdout } = await shell(['connect', adbEndpoint(host, port)])
 
   if (stderr) {
     throw stderr
@@ -377,9 +377,9 @@ async function connect(host, port) {
 }
 
 async function disconnect(host, port) {
-  const address = port ? `${host}:${port}` : host
-
-  const { stderr, stdout } = await shell(`disconnect ${address}`)
+  const discoveredSerial = port == null && typeof host === 'string' && /^[\w.-]+\._adb-tls-connect\._tcp\.?$/i.test(host)
+  const target = discoveredSerial ? validateDeviceSerial(host) : adbEndpoint(host, port)
+  const { stderr, stdout } = await shell(['disconnect', target])
 
   if (stderr) {
     throw stderr
@@ -461,7 +461,7 @@ async function getScreenSize(id) {
 
 async function getDeviceList() {
   const listDevicesWithPaths = await client.listDevicesWithPaths()
-  const devices = listDevicesWithPaths.filter(item => !['offline'].includes(item.type))
+  const devices = listDevicesWithPaths
 
   const concurrencyLimit = Number(electronStore.get('common.concurrencyLimit') ?? 10)
   const limit = pLimit(concurrencyLimit)
@@ -469,6 +469,9 @@ async function getDeviceList() {
   const value = await Promise.all(
     devices.map(item =>
       limit(async () => {
+        if (!['device', 'emulator'].includes(item.type)) {
+          return { ...item, serialNo: item.id, screenWidth: null, screenHeight: null }
+        }
         const [serialNo, screenSize] = await Promise.all([
           getSerialNo(item.id),
           getScreenSize(item.id),

@@ -1,4 +1,5 @@
 import { defineStore } from 'pinia'
+import { computed, ref } from 'vue'
 import dayjs from 'dayjs'
 import { capitalize } from 'lodash-es'
 import { name as packageName } from '$root/package.json'
@@ -14,6 +15,14 @@ const $electronStore = window.$preload.store
 export const useDeviceStore = defineStore('app-device', () => {
   const list = ref([])
   const config = ref({})
+  const loading = ref(false)
+  const error = ref('')
+  const rememberedSelection = $electronStore.get('ui.selectedDeviceId')
+  const selectedId = ref(typeof rememberedSelection === 'string' ? rememberedSelection : '')
+  const selectedDevice = computed(() => list.value.find(device => device.id === selectedId.value)
+    || (selectedId.value ? { id: selectedId.value, status: 'offline', type: 'offline' } : null))
+  const selectedReady = computed(() => isDeviceReady(selectedId.value))
+  let requestVersion = 0
 
   function init() {
     config.value = {
@@ -62,13 +71,61 @@ export const useDeviceStore = defineStore('app-device', () => {
     return value
   }
 
-  async function getList() {
-    const historyDevices = getHistoryDevices()
-    const currentDevices = await getCurrentDevices()
-    const mergedDevices = mergeDevices(historyDevices, currentDevices)
-    saveDevicesToStore(mergedDevices)
-    list.value = mergedDevices
-    return mergedDevices
+  function selectDevice(id) {
+    if (typeof id !== 'string' || (id && !list.value.some(device => device.id === id))) {
+      throw new TypeError('Select a device from the current list')
+    }
+    selectedId.value = id
+    $electronStore.set('ui.selectedDeviceId', id)
+  }
+
+  function isDeviceReady(id) {
+    return !error.value && !loading.value
+      && list.value.some(device => device.id === id && ['device', 'emulator'].includes(device.status))
+  }
+
+  function runDeviceAction(id, action) {
+    return isDeviceReady(id) ? action() : false
+  }
+
+  async function getList({ timeout = 10000 } = {}) {
+    if (!Number.isFinite(timeout) || timeout < 1 || timeout > 60000) {
+      throw new TypeError('Invalid device refresh timeout')
+    }
+    const version = ++requestVersion
+    let timer
+    loading.value = true
+    error.value = ''
+    try {
+      const currentDevices = await Promise.race([
+        getCurrentDevices(),
+        new Promise((_, reject) => {
+          timer = setTimeout(() => reject(new Error('Device refresh timed out')), timeout)
+        }),
+      ])
+      if (version !== requestVersion) {
+        return list.value
+      }
+      const mergedDevices = mergeDevices(getHistoryDevices(), currentDevices)
+      saveDevicesToStore(mergedDevices)
+      list.value = mergedDevices
+      if (!selectedId.value && mergedDevices.length) {
+        selectDevice(mergedDevices.find(device => ['device', 'emulator'].includes(device.status))?.id || mergedDevices[0].id)
+      }
+      return mergedDevices
+    }
+    catch (failure) {
+      if (version === requestVersion) {
+        error.value = failure?.message || String(failure)
+      }
+      throw failure
+    }
+    finally {
+      clearTimeout(timer)
+      if (version === requestVersion) {
+        loading.value = false
+      }
+    }
   }
 
   function setRemark(deviceId, value) {
@@ -79,6 +136,14 @@ export const useDeviceStore = defineStore('app-device', () => {
   return {
     list,
     config,
+    loading,
+    error,
+    selectedId,
+    selectedDevice,
+    selectedReady,
+    isDeviceReady,
+    runDeviceAction,
+    selectDevice,
     init,
     getLabel,
     getList,

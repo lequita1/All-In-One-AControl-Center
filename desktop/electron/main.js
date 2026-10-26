@@ -26,7 +26,9 @@ import { browserWindowHeight, browserWindowWidth, getLogoPath } from './configs/
 import { getAppBackgroundColor } from './helpers/index.js'
 
 import {
+  appManagementService,
   contextMenuService,
+  deviceInfoService,
   edgerService,
   handlesService,
   launchService,
@@ -70,6 +72,8 @@ mainApp.use(clipboardPlugin)
 mainApp.use(edgerService)
 mainApp.use(listenersService)
 mainApp.use(handlesService)
+mainApp.use(deviceInfoService)
+mainApp.use(appManagementService)
 mainApp.use(trayService)
 mainApp.use(contextMenuService)
 mainApp.use(updaterService)

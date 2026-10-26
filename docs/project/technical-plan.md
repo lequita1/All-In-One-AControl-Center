@@ -28,6 +28,14 @@ Preserve upstream history. After approval, configure the user-selected origin an
 
 The inherited renderer settings and broad preload remain known risks during the private baseline experiment. Do not add new general-purpose renderer shell access. Migrate settings/bridge boundaries with a narrow smoke test when touching the corresponding surface; resolve any demonstrated critical exploit before expanding its use. Passing the baseline is not a production-security claim.
 
+### Application management boundary
+
+Reuse the existing scrcpy application listing/launch and adbkit install primitives after inspecting their callers. Validate package IDs at the injected adbx boundary before device lookup, including installed checks and removal; apply a 255-character input bound and allow the framework identifier `android`. Follow [Android application-ID syntax](https://developer.android.com/build/configure-app-module) for ordinary IDs. This low-level validation is distinct from permission to remove an application.
+
+The app library's ordinary mutations need narrow main-process operations with an explicit captured serial, package and numeric Android user. Confirm destructive actions against that same tuple, refresh current installed/system status before applying them, and never retry against another selected device. User-installed applications are the initial removal scope. System enable/disable needs capability checks, a protected-package policy and an explicit recovery path; the presence of a raw transport method does not establish safe debloating. Install/export paths and cancellation are separate host/device file boundaries. Existing arbitrary developer shell access is not the library's implementation API.
+
+Application commands own their TCP socket before the ADB handshake and cancel that socket on expiry. Check frame authority at dispatch, after transport setup. Reuse the pinned adbkit 3.3.8 parser/command framing through the contained transport adapter; its internal imports must be revalidated with the local protocol tests when that pin changes. A timeout after actual dispatch reports an uncertain outcome and never triggers an automatic mutation retry.
+
 ## Upstream maintenance tradeoff
 
 This is a maintained derivative with increasing divergence. Rewriting privileged middleware will make automatic merges more expensive; it does not prove all upstream updates become impractical. Preserve public interfaces when reasonable, isolate changed files, and prefer selective upstream fixes after inspection. Reassess the cost at each relevant change. No promise of effortless upstream merges, and no unconditional commitment to a complete rewrite.

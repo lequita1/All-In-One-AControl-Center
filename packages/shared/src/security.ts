@@ -1,5 +1,22 @@
 // ── Shell Command Blocklist ──────────────────────────────────────────────
 
+/** Require a concrete USB, emulator, TCP/IP or discovered ADB target. */
+export function validateDeviceSerial(serial: string): string {
+  if (typeof serial !== 'string' || !/^[a-z0-9[][\w.:[\]%-]{0,255}$/i.test(serial)) {
+    throw new TypeError('A valid explicit device target is required')
+  }
+  return serial
+}
+
+/** Accept an Android application ID, including the framework's special ID. */
+export function validatePackageName(packageName: string): string {
+  if (typeof packageName !== 'string' || packageName.length > 255
+    || (packageName !== 'android' && !/^[a-z]\w*(?:\.[a-z]\w*)+$/i.test(packageName))) {
+    throw new TypeError('A valid Android package identifier is required')
+  }
+  return packageName
+}
+
 /**
  * Dangerous command patterns that should be blocked by default.
  * Each entry is a regex tested against the full command string.

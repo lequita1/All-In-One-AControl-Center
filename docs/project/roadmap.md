@@ -46,14 +46,16 @@ No installer, Windows CI, SBOM, ten-cycle/five-minute soak test, second phone or
 
 ### Phase 2 — connection and interface usability
 
-In progress: user requested runtime/supply-chain security as a first-class requirement. Remediate known critical dependency paths and test host command boundaries before expanding them. See SECURITY.md; a clean scan alone is not proof of safety.
+In progress: user requested runtime/supply-chain security as a first-class requirement and authorized source publication to the selected repository. The baseline is on `main`; security work continues on `feat/secure-device-operations`. See [implementation notes](phase-2-plan.md) and SECURITY.md. A clean scan alone is not proof of safety.
 
 - [ ] Verify existing USB/wireless/mirroring paths before replacing them; fix observed connection/reconnect/authorization defects and show usable errors.
-- [ ] Improve device selector/navigation and basic information within existing UI conventions.
-- [ ] Establish the mock transport/launcher test seam described below as affected paths are touched, before accepting new targeting behavior.
+- [x] Improve device selector/navigation and basic information within existing UI conventions. Implemented with automated checks and packaged UI inspection; remaining hardware coverage is recorded separately in verification.
+- [x] Establish the mock transport/launcher test seam described below as affected paths are touched, before accepting new targeting behavior. Automated A/B transport isolation, host argv and startup/cancellation tests exist; this is not two-phone hardware verification.
 - [ ] Decide embedded mirroring through its isolated spike; do not turn it into a prerequisite for every other feature.
 
 ### Phase 3 — application management
+
+In progress: initial library, per-user package inventory, guarded launch/force-stop/user-app removal and native-selected single/compatible-split APK installation are implemented and automatically tested. Keep populated visual and disposable-APK hardware verification distinct from implementation. Names/icons, details/permissions, export/batches and protected enable/disable/recovery remain required increments. Contracts: [Phase 3 notes](phase-3-plan.md); results: [verification](verification.md).
 
 - [ ] Verify and reuse existing listing, launch and install paths; build a coherent library and explicit result/confirmation flows.
 - [ ] Add missing management operations only after inspecting their existing callers/wrappers.
@@ -110,6 +112,8 @@ Fixture has serials A and B, separate call logs/state, configurable stream/error
 
 For service/preload paths not currently injected, introduce the smallest narrow seam while touching that feature. For host scrcpy/ADB launch, mock the child-process boundary and assert executable/argv, `shell: false`, serial and cancellation ownership. Run tests without executing real device commands.
 
+The application service's pre-dispatch cancellation also uses a tiny ephemeral loopback ADB fixture with the installed parser/framing. Exercise handshake cancellation and late replies on an isolated port; do not replace or stop the shared phone service to test this boundary.
+
 Adversarial path/package fixtures assert that quoted input cannot add another command. Mock assertions prove command construction, not actual Android-shell parsing; add a harmless scratch-filename hardware check in Phase 4. Invalid package identifiers reject before transport access. Ordinary UI actions cannot use the developer terminal as a bypass.
 
 ## Embedded-mirroring decision
@@ -124,4 +128,4 @@ Go only if the prototype demonstrates video/input and teardown on the POCO, need
 
 Audience is settled: personal first. Lean baseline implementation approved; embedded spike remains a separate later decision; phone cable/debugging/driver availability is checked during assisted setup. The latest build/test/repository observations are in the verification log, not repeated here.
 
-Next: plan and execute the Phase 2 connection/interface work from this working baseline, preserving the verified device path. On 26 October 2026 the user authorized pushing reviewed source and continuing the full roadmap, explicitly prioritizing runtime and dependency/source security. Implement in verified increments; private extensions and public binary releases still require their respective gates.
+Next: complete the changed artifact's mirror/input and USB/wireless reconnect coverage when the POCO is available, and continue Phase 3 application-management inspection/hardening independently. Embedded mirroring retains its separate decision gate. On 26 October 2026 the user authorized pushing reviewed source and continuing the full roadmap, explicitly prioritizing runtime and dependency/source security. Implement in verified increments; private extensions and public binary releases still require their respective gates.

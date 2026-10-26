@@ -15,6 +15,8 @@ export const files = [
   'dist-electron',
   '!**/node_modules/@lydell/node-pty-*/**/*',
   '**/node_modules/@lydell/node-pty-*${platform}-${arch}/**/*',
+  // Native-module globs must not pull dependencies from older local builds.
+  '!dist-release{,/**/*}',
 ]
 
 /** Native modules that must live on disk outside the asar archive. */

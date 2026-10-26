@@ -1,4 +1,7 @@
+import { promisify } from 'node:util'
 import treeKill from '@magda/tree-kill'
+
+const terminateTree = promisify(treeKill)
 
 /**
  * Process Manager
@@ -11,22 +14,27 @@ export class ProcessManager {
   }
 
   add(process) {
-    this.processList.push(process)
+    if (!this.processList.includes(process)) {
+      this.processList.push(process)
+      process.once('close', () => {
+        this.processList = this.processList.filter(item => item !== process)
+      })
+    }
   }
 
   async kill(process) {
-    if (!process) {
-      for (const item of this.processList) {
-        await treeKill(item.pid, 'SIGTERM')
-      }
-
-      this.processList = []
-      return this
+    const targets = process == null
+      ? [...this.processList]
+      : this.processList.filter(item => item === process || item.pid === process)
+    if (process != null && !targets.length) {
+      throw new TypeError('Cannot terminate an unowned process')
     }
-
-    const pid = process?.pid || process
-    await treeKill(pid, 'SIGTERM')
-    this.processList = this.processList.filter(item => item.pid !== pid)
+    for (const item of targets) {
+      if (Number.isInteger(item.pid) && item.pid > 0 && item.exitCode == null && item.signalCode == null) {
+        await terminateTree(item.pid, 'SIGTERM')
+      }
+      this.processList = this.processList.filter(owned => owned !== item)
+    }
     return this
   }
 }

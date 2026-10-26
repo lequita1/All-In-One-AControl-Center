@@ -1,6 +1,6 @@
 <template>
-  <div class="flex items-center flex-none !space-x-2">
-    <div class="w-72 flex-none">
+  <div class="flex flex-wrap items-center gap-2">
+    <div class="w-64 max-w-full flex-none">
       <el-autocomplete
         :key="autocompleteKey"
         ref="elAutocompleteRef"
@@ -89,6 +89,7 @@ import { sleep } from '$/utils'
 import { parseDeviceId } from '$/utils/device'
 import DiscoverAction from './discover-action/index.vue'
 import QrAction from './qr-action/index.vue'
+import { watchInitialWirelessConnection } from './initial-connection.js'
 
 const props = defineProps({
   handleRefresh: {
@@ -117,14 +118,11 @@ const wirelessList = computed(() =>
 )
 
 onMounted(() => {
-  const unwatch = watch(
+  watchInitialWirelessConnection(
     wirelessList,
-    async (val) => {
-      unwatch()
-      if (!val)
-        return
-      handleConnectAuto()
-    },
+    computed(() => !deviceStore.loading && !deviceStore.error),
+    handleConnectAuto,
+    error => ElMessage.warning(error?.message || window.t('connection.serviceError')),
   )
   getAddress()
 })
