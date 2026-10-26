@@ -19,6 +19,7 @@ function fixture(overrides = {}) {
     users: vi.fn(async serial => ({ serial, users: [{ id: 0, name: 'Owner' }, { id: 10, name: 'Work' }] })),
     list: vi.fn(async target => ({ ...target, packages: [{ packageName: 'com.example.app', userInstalled: true, enabled: true }], users: [{ id: 0 }, { id: 10 }] })),
     perform: vi.fn(async target => ({ ...target, status: 'completed' })),
+    install: vi.fn(async target => ({ ...target, action: 'install', status: 'completed', fileCount: 2 })),
     ...overrides,
   }
   const scope = effectScope()
@@ -27,6 +28,46 @@ function fixture(overrides = {}) {
 }
 
 describe('application library selection', () => {
+  it('installs for the captured user and refreshes after a verified install result', async () => {
+    const f = fixture()
+    await flush()
+    await f.library.selectUser(10)
+    const previous = f.api.list.mock.calls.length
+    await f.library.install()
+    expect(f.api.install).toHaveBeenCalledWith({ serial: 'A', userId: 10 })
+    expect(f.library.notice.value).toMatchObject({ action: 'install', status: 'completed', fileCount: 2 })
+    expect(f.api.list.mock.calls.length).toBe(previous + 1)
+    f.scope.stop()
+  })
+
+  it('discards an installation result after the selected phone changes', async () => {
+    const f = fixture()
+    await flush()
+    const result = pending()
+    f.api.install.mockReturnValueOnce(result.promise)
+    const operation = f.library.install()
+    f.selected.value = { id: 'B', status: 'device' }
+    await flush()
+    result.resolve({ serial: 'A', userId: 0, action: 'install', status: 'completed', fileCount: 1 })
+    await operation
+    expect(f.api.install).toHaveBeenCalledWith({ serial: 'A', userId: 0 })
+    expect(f.library.notice.value).toBeNull()
+    f.scope.stop()
+  })
+
+  it('does not install while disconnected or accept a mismatched install response', async () => {
+    const f = fixture({ install: vi.fn(async target => ({ ...target, serial: 'B', action: 'install', status: 'completed' })) })
+    await flush()
+    await f.library.install()
+    expect(f.library.error.value).toMatch(/outcome.*verified/i)
+    expect(f.library.notice.value).toBeNull()
+    f.ready.value = false
+    await flush()
+    await f.library.install()
+    expect(f.api.install).toHaveBeenCalledOnce()
+    f.scope.stop()
+  })
+
   it('discards users from a previous phone and loads only the current tuple', async () => {
     const a = pending()
     const f = fixture({ users: vi.fn(serial => serial === 'A' ? a.promise : Promise.resolve({ serial: 'B', users: [{ id: 10 }] })) })

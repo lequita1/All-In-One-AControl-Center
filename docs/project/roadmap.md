@@ -55,7 +55,7 @@ In progress: user requested runtime/supply-chain security as a first-class requi
 
 ### Phase 3 — application management
 
-In progress: initial library, per-user package inventory and guarded launch/force-stop/user-app removal are implemented and automatically tested. Keep populated visual and disposable-APK hardware verification distinct from implementation. Names/icons, install/splits, details/permissions, export/batches and protected enable/disable/recovery remain required increments. Contracts: [Phase 3 notes](phase-3-plan.md); results: [verification](verification.md).
+In progress: initial library, per-user package inventory, guarded launch/force-stop/user-app removal and native-selected single/compatible-split APK installation are implemented and automatically tested. Keep populated visual and disposable-APK hardware verification distinct from implementation. Names/icons, details/permissions, export/batches and protected enable/disable/recovery remain required increments. Contracts: [Phase 3 notes](phase-3-plan.md); results: [verification](verification.md).
 
 - [ ] Verify and reuse existing listing, launch and install paths; build a coherent library and explicit result/confirmation flows.
 - [ ] Add missing management operations only after inspecting their existing callers/wrappers.

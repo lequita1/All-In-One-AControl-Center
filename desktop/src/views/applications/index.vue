@@ -8,9 +8,14 @@
           {{ selected.id }}
         </p>
       </div>
-      <el-button icon="Refresh" :loading="loading" :disabled="busy" @click="refreshLibrary">
-        {{ $t('common.refresh') }}
-      </el-button>
+      <div class="library-buttons">
+        <el-button type="primary" :disabled="actionsPaused || !Number.isInteger(userId)" @click="install">
+          {{ $t('apps.install') }}
+        </el-button>
+        <el-button icon="Refresh" :loading="loading" :disabled="busy" @click="refreshLibrary">
+          {{ $t('common.refresh') }}
+        </el-button>
+      </div>
     </header>
     <p v-if="!ready" class="library-message" role="status">
       {{ $t('apps.connectHint') }}
@@ -33,8 +38,13 @@
       </div>
       <el-alert v-if="error" type="error" :closable="false" show-icon class="mb-3" :title="error" />
       <p v-if="notice" role="status" class="library-message">
-        {{ $t(notice.status === 'cancelled' ? 'apps.cancelled' : 'apps.completed') }} · {{ notice.packageName }}
+        {{ $t(notice.status === 'cancelled' ? 'apps.cancelled' : 'apps.completed') }}<template v-if="notice.packageName">
+          · {{ notice.packageName }}
+        </template><template v-else-if="notice.fileCount">
+          · {{ $t('apps.installedFiles', { count: notice.fileCount }) }}
+        </template>
       </p>
+      <el-alert v-if="notice?.warnings?.length" type="warning" :closable="false" show-icon class="mb-3" :title="notice.warnings.join('. ')" />
       <p v-if="busy" role="status" class="library-message">
         {{ $t('apps.working') }}
       </p>
@@ -92,7 +102,7 @@ import { useApplications } from '$/hooks/use-applications/index.js'
 
 const store = useDeviceStore()
 const { selectedDevice: selected, selectedReady: ready } = storeToRefs(store)
-const { users, userId, packages, loading, busy, error, notice, refresh, selectUser, perform } = useApplications(selected, ready)
+const { users, userId, packages, loading, busy, error, notice, refresh, selectUser, perform, install } = useApplications(selected, ready)
 const refreshDevices = inject('refreshDevices')
 const search = ref('')
 const typeFilter = ref('all')
@@ -131,6 +141,15 @@ h1 {
   font-size: 12px;
   color: var(--el-text-color-secondary);
   overflow-wrap: anywhere;
+}
+.library-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: end;
+  gap: 8px;
+}
+.library-buttons .el-button + .el-button {
+  margin-left: 0;
 }
 .library-filters {
   display: flex;

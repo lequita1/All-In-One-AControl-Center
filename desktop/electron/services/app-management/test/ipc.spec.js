@@ -3,11 +3,11 @@ import path from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { describe, expect, it, vi } from 'vitest'
 import { dialog } from 'electron'
-import { confirmApplicationAction, createAppManagementHandlers } from '../index.js'
+import { confirmApkInstallation, confirmApplicationAction, createAppManagementHandlers, selectInstallFiles } from '../index.js'
 
-vi.mock('electron', () => ({ ipcMain: { handle: vi.fn() }, dialog: { showMessageBox: vi.fn(async () => ({ response: 0 })) } }))
+vi.mock('electron', () => ({ ipcMain: { handle: vi.fn() }, dialog: { showMessageBox: vi.fn(async () => ({ response: 0 })), showOpenDialog: vi.fn(async () => ({ canceled: true, filePaths: [] })) } }))
 vi.mock('$electron/helpers/i18n/index.js', () => ({ t: key => key }))
-vi.mock('../transport.js', () => ({ openApplicationShell: (device, command, { authorize }) => {
+vi.mock('../transport.js', () => ({ pushApplicationFile: vi.fn(), openApplicationShell: (device, command, { authorize }) => {
   authorize()
   return device.shell(command)
 } }))
@@ -37,7 +37,30 @@ describe('application IPC boundary', () => {
     await expect(handlers.users(f.event, 'A')).rejects.toThrow()
     await expect(handlers.list(f.event, { serial: 'A', userId: 0 })).rejects.toThrow()
     await expect(handlers.perform(f.event, { serial: 'A', userId: 0, packageName: 'com.example.app', action: 'uninstall' })).rejects.toThrow()
+    await expect(handlers.install(f.event, { serial: 'A', userId: 0 })).rejects.toThrow()
     expect(f.client.listDevicesWithPaths).not.toHaveBeenCalled()
+  })
+
+  it('uses a parented native APK-only multi-file picker and treats dismissal as cancellation', async () => {
+    const f = fixture()
+    await expect(selectInstallFiles(f.mainApp)).resolves.toEqual([])
+    expect(dialog.showOpenDialog).toHaveBeenLastCalledWith(f.window, expect.objectContaining({ properties: ['openFile', 'multiSelections'], filters: [{ name: 'apps.apkFiles', extensions: ['apk'] }] }))
+  })
+
+  it('shows captured target, update consequences and file fingerprints; defaults to cancel', async () => {
+    const f = fixture()
+    await expect(confirmApkInstallation(f.mainApp, { serial: 'A', userId: 10, files: [{ name: 'base.apk', size: 123, sha256: 'f'.repeat(64) }] })).resolves.toBe(false)
+    const [window, options] = dialog.showMessageBox.mock.calls.at(-1)
+    expect(window).toBe(f.window)
+    expect(options).toMatchObject({ defaultId: 0, cancelId: 0, message: 'apps.installWarning' })
+    for (const value of ['A', '10', 'base.apk', '123', 'f'.repeat(64)]) expect(options.detail).toContain(value)
+  })
+
+  it('rejects renderer-supplied file paths before showing a picker', async () => {
+    const f = fixture()
+    dialog.showOpenDialog.mockClear()
+    await expect(createAppManagementHandlers(f.mainApp, f.client).install(f.event, { serial: 'A', userId: 0, paths: ['/other.apk'] })).rejects.toThrow()
+    expect(dialog.showOpenDialog).not.toHaveBeenCalled()
   })
 
   it('rejects another window or child frame', async () => {

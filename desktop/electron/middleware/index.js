@@ -35,6 +35,7 @@ export function createMiddleware() {
       users: serial => electronAPI.ipcRenderer.invoke('apps:users', serial),
       list: request => electronAPI.ipcRenderer.invoke('apps:list', request),
       perform: request => electronAPI.ipcRenderer.invoke('apps:perform', request),
+      install: request => electronAPI.ipcRenderer.invoke('apps:install', request),
     },
     scrcpy,
     gnirehtet,

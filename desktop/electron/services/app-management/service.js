@@ -1,6 +1,8 @@
 import { randomBytes } from 'node:crypto'
 import { shellEscape, validateDeviceSerial, validatePackageName } from '@escrcpy/shared'
-import { openApplicationShell } from './transport.js'
+import { openApplicationShell, pushApplicationFile } from './transport.js'
+import { prepareInstallFiles } from './install-files.js'
+import { createApkInstaller } from './installer.js'
 
 function userId(value) {
   if (!Number.isInteger(value) || value < 0 || value > 2147483647)
@@ -47,9 +49,11 @@ function parsePackages(output, versions = false) {
 }
 
 /** Only fixed operation builders can call this injected transport. */
-export function createAppManagement(client, { confirm = async () => false, timeout = 5000, openShell = openApplicationShell } = {}) {
+export function createAppManagement(client, { confirm = async () => false, timeout = 5000, openShell = openApplicationShell, selectFiles = async () => [], prepareFiles = prepareInstallFiles, confirmInstall = async () => false, pushFile = pushApplicationFile, installTimeout = 180000 } = {}) {
   if (!Number.isFinite(timeout) || timeout < 1 || timeout > 15000)
     throw new TypeError('Invalid application query timeout')
+  if (!Number.isFinite(installTimeout) || installTimeout < 1 || installTimeout > 180000)
+    throw new TypeError('Invalid installation timeout')
   const busy = new Set()
 
   async function connect(serial) {
@@ -59,10 +63,10 @@ export function createAppManagement(client, { confirm = async () => false, timeo
     return client.getDevice(serial)
   }
 
-  async function run(device, args, authorize = () => {}) {
+  async function run(device, args, authorize = () => {}, limit = timeout) {
     const marker = `__ACC_${randomBytes(12).toString('hex')}__`
     const command = `${args.map(arg => `'${shellEscape(String(arg))}'`).join(' ')} 2>&1; printf '\n${marker}%s\n' "$?"`
-    const deadline = Date.now() + timeout
+    const deadline = Date.now() + limit
     let stream
     const cancellation = new AbortController()
     const operation = (async () => {
@@ -97,7 +101,7 @@ export function createAppManagement(client, { confirm = async () => false, timeo
       }
       return result.slice(0, offset).trim()
     })()
-    return bounded(operation, timeout, () => {
+    return bounded(operation, limit, () => {
       cancellation.abort()
       stream?.destroy()
     })
@@ -158,7 +162,19 @@ export function createAppManagement(client, { confirm = async () => false, timeo
       throw new Error('This action is limited to user-installed applications; system apps are protected')
   }
 
+  const install = createApkInstaller({ connect, readUsers, run, selectFiles, prepareFiles, confirmInstall, pushFile, installTimeout })
+
   return {
+    async install(request, authorize = () => {}) {
+      const target = requestTuple(request)
+      if (busy.has(target.serial))
+        throw new Error('An application action is already in progress on this phone')
+      busy.add(target.serial)
+      try {
+        return await install(target, authorize)
+      }
+      finally { busy.delete(target.serial) }
+    },
     async users(serial) {
       validateDeviceSerial(serial)
       return { serial, users: await readUsers(await connect(serial)) }

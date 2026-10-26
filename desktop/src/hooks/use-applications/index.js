@@ -81,18 +81,17 @@ export function useApplications(selected, ready, api = window.$preload.apps) {
     }
   }
 
-  async function perform(packageName, action) {
-    if (!active || !ready.value || loading.value || busy.value || error.value || !packages.value.some(item => item.packageName === packageName))
+  async function runAction(target, method) {
+    if (!active || !ready.value || loading.value || busy.value || error.value || !Number.isInteger(userId.value))
       return
     const request = version
-    const target = { serial: selected.value.id, userId: userId.value, packageName, action }
     busy.value = true
     notice.value = null
     try {
-      const result = await api.perform(target)
+      const result = await api[method](method === 'install' ? { serial: target.serial, userId: target.userId } : target)
       if (!active || request !== version)
         return
-      if (result?.serial !== target.serial || result?.userId !== target.userId || result?.packageName !== target.packageName || result?.action !== target.action || !['completed', 'cancelled'].includes(result.status))
+      if (!result || Object.entries(target).some(([key, value]) => result[key] !== value) || !['completed', 'cancelled'].includes(result.status))
         throw new Error('Application action outcome could not be verified')
       notice.value = result
       if (result.status === 'completed')
@@ -107,10 +106,20 @@ export function useApplications(selected, ready, api = window.$preload.apps) {
     }
   }
 
+  async function perform(packageName, action) {
+    if (!packages.value.some(item => item.packageName === packageName))
+      return
+    return runAction({ serial: selected.value?.id, userId: userId.value, packageName, action }, 'perform')
+  }
+
+  async function install() {
+    return runAction({ serial: selected.value?.id, userId: userId.value, action: 'install' }, 'install')
+  }
+
   watch([() => selected.value?.id, () => selected.value?.status, ready], refresh, { immediate: true })
   onScopeDispose(() => {
     active = false
     version++
   })
-  return { users, userId, packages, loading, busy, error, notice, refresh, selectUser, perform }
+  return { users, userId, packages, loading, busy, error, notice, refresh, selectUser, perform, install }
 }
