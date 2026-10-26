@@ -5,7 +5,11 @@ import { deviceStatus as deviceStatusDict } from '$/dicts/device/index.js'
  * Retrieve device name
  */
 export function getDeviceName(device) {
-  return device.product ? device.product.split(':')[1] : 'Unauthorized device'
+  const fields = [device.model, device.product, device.path].filter(value => typeof value === 'string')
+  const value = fields.find(value => value.startsWith('model:'))
+    || fields.find(value => !value.includes(':'))
+    || fields.find(value => value.startsWith('product:'))
+  return typeof value === 'string' ? value.replace(/^(?:model|product):/, '').replaceAll('_', ' ') : ''
 }
 
 /**
@@ -58,7 +62,7 @@ export const deviceSortModel = deviceStatusDict.reduce((obj, item, index) => {
  */
 export function mergeDevices(historyDevices, currentDevices) {
   // Merge device lists: current devices take precedence; history devices as defaults
-  const historyDeviceMap = keyBy(historyDevices, 'id')
+  const historyDeviceMap = keyBy(historyDevices.map(device => ({ ...device, status: 'offline', type: 'offline' })), 'id')
   const currentDeviceMap = keyBy(currentDevices, 'id')
   const mergedDeviceList = Object.values(defaultsDeep(currentDeviceMap, historyDeviceMap))
 

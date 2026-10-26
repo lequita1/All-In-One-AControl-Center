@@ -49,7 +49,7 @@ No installer, Windows CI, SBOM, ten-cycle/five-minute soak test, second phone or
 In progress: user requested runtime/supply-chain security as a first-class requirement and authorized source publication to the selected repository. The baseline is on `main`; security work continues on `feat/secure-device-operations`. See [implementation notes](phase-2-plan.md) and SECURITY.md. A clean scan alone is not proof of safety.
 
 - [ ] Verify existing USB/wireless/mirroring paths before replacing them; fix observed connection/reconnect/authorization defects and show usable errors.
-- [ ] Improve device selector/navigation and basic information within existing UI conventions.
+- [x] Improve device selector/navigation and basic information within existing UI conventions. Implemented with automated checks and packaged UI inspection; remaining hardware coverage is recorded separately in verification.
 - [x] Establish the mock transport/launcher test seam described below as affected paths are touched, before accepting new targeting behavior. Automated A/B transport isolation, host argv and startup/cancellation tests exist; this is not two-phone hardware verification.
 - [ ] Decide embedded mirroring through its isolated spike; do not turn it into a prerequisite for every other feature.
 
@@ -124,4 +124,4 @@ Go only if the prototype demonstrates video/input and teardown on the POCO, need
 
 Audience is settled: personal first. Lean baseline implementation approved; embedded spike remains a separate later decision; phone cable/debugging/driver availability is checked during assisted setup. The latest build/test/repository observations are in the verification log, not repeated here.
 
-Next: plan and execute the Phase 2 connection/interface work from this working baseline, preserving the verified device path. On 26 October 2026 the user authorized pushing reviewed source and continuing the full roadmap, explicitly prioritizing runtime and dependency/source security. Implement in verified increments; private extensions and public binary releases still require their respective gates.
+Next: complete the changed artifact's mirror/input and USB/wireless reconnect coverage when the POCO is available, and continue Phase 3 application-management inspection/hardening independently. Embedded mirroring retains its separate decision gate. On 26 October 2026 the user authorized pushing reviewed source and continuing the full roadmap, explicitly prioritizing runtime and dependency/source security. Implement in verified increments; private extensions and public binary releases still require their respective gates.

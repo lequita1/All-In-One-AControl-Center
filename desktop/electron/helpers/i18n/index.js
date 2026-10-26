@@ -6,7 +6,8 @@ import electronStore from '$electron/helpers/store/index.js'
 import { localesDir } from '$electron/configs/extra/index.js'
 
 const lng = electronStore.get('common.language') ?? osLocale() ?? 'en-US'
-const loadPath = path.join(localesDir, '{lng}.json')
+// Backend path placeholders are independent of translated-message interpolation.
+const loadPath = path.join(localesDir, '{{lng}}.json')
 
 i18n
   .use(Backend)
@@ -36,7 +37,7 @@ electronStore.onDidChange('common.language', (val) => {
 })
 
 function changeLanguage(val) {
-  i18n.changeLanguage(val)
+  return i18n.changeLanguage(val)
 }
 
 function onLanguageChanged(callback) {

@@ -61,4 +61,25 @@ describe('adb connection boundary', () => {
     await adb.disconnect('adb-test._adb-tls-connect._tcp')
     expect(external.calls[0].command).toEqual(['C:\\trusted tools\\adb.exe', 'disconnect', 'adb-test._adb-tls-connect._tcp'])
   })
+
+  it('reports authorization/status changes from the tracker', async () => {
+    const tracker = Object.assign(new EventEmitter(), { end: vi.fn() })
+    client.trackDevices = async () => tracker
+    const callback = vi.fn()
+    const close = await adb.watch(callback)
+    tracker.emit('change', { id: 'device-A', type: 'device' })
+    expect(callback).toHaveBeenCalledWith('change', { id: 'device-A', type: 'device' })
+    close()
+    expect(tracker.end).toHaveBeenCalledOnce()
+  })
+
+  it('shows unavailable devices without attempting privileged property queries', async () => {
+    client.listDevicesWithPaths = async () => [{ id: 'device-A', type: 'unauthorized' }, { id: 'device-B', type: 'offline' }]
+    client.getDevice = vi.fn(() => {
+      throw new Error('Device query must not run')
+    })
+    const devices = await adb.getDeviceList()
+    expect(devices.map(device => [device.id, device.type])).toEqual([['device-A', 'unauthorized'], ['device-B', 'offline']])
+    expect(client.getDevice).not.toHaveBeenCalled()
+  })
 })

@@ -1,6 +1,6 @@
 <template>
-  <div class="flex items-center flex-none !space-x-2">
-    <div class="w-72 flex-none">
+  <div class="flex flex-wrap items-center gap-2">
+    <div class="w-64 max-w-full flex-none">
       <el-autocomplete
         :key="autocompleteKey"
         ref="elAutocompleteRef"

@@ -1,12 +1,18 @@
 <template>
-  <div class="h-full flex flex-col">
+  <div class="device-workspace h-full flex flex-col min-h-0">
+    <DeviceSummary />
+    <div v-if="deviceStore.error" class="mb-2 text-sm" role="alert">
+      {{ $t('connection.stale') }}
+    </div>
     <BatchActions
+      :inert="!hasSelection"
+      :aria-hidden="!hasSelection"
       class="overflow-hidden transition-all"
       :class="hasSelection ? 'max-h-12 opacity-100 mb-2' : 'max-h-0 opacity-0 mb-0'"
-      :devices="selectedRows"
+      :devices="availableSelection"
     />
 
-    <div class="flex-1 min-h-0 overflow-hidden">
+    <div class="flex-1 min-h-40 overflow-hidden" :inert="Boolean(deviceStore.error) || loading" :aria-disabled="Boolean(deviceStore.error)">
       <el-table
         ref="tableRef"
         v-loading="loading && !deviceList.length"
@@ -19,11 +25,12 @@
         @selection-change="onSelectionChange"
       >
         <template #empty>
-          <AppEmpty v-show="!loading" :sub-title="$t('device.list.empty')">
-          </AppEmpty>
+          <p v-show="!loading" class="px-4 text-sm">
+            {{ $t('connection.noDevices') }}
+          </p>
         </template>
 
-        <el-table-column type="selection" width="30"></el-table-column>
+        <el-table-column type="selection" width="30" :selectable="row => ['device', 'emulator'].includes(row.status)"></el-table-column>
 
         <el-table-column
           :label="$t('device.serial')"
@@ -136,20 +143,20 @@
       </el-table>
     </div>
 
-    <div class="flex-none flex items-center py-1 overflow-hidden py-2">
-      <div class="flex-none">
+    <div class="flex-none flex flex-wrap items-center gap-2 py-2">
+      <div class="flex-1 min-w-0">
         <WirelessGroup ref="wirelessGroupRef" v-bind="{ handleRefresh }" @auto-connected="onAutoConnected" />
       </div>
 
-      <div class="flex-1 w-0 gap-2 flex items-center justify-end">
+      <div class="flex-none gap-2 flex items-center justify-end">
         <el-button
           type="default"
           :icon="loading ? '' : 'Refresh'"
           :loading="loading"
-          circle
-          :title="$t('device.refresh.name')"
+          :title="$t('connection.refresh')"
           @click="handleRefresh"
         >
+          {{ $t('common.refresh') }}
         </el-button>
       </div>
     </div>
@@ -160,7 +167,8 @@
 import { uniqBy } from 'lodash-es'
 import { sleep } from '$/utils/index.js'
 
-import AppEmpty from '$/components/app-empty/index.vue'
+import DeviceSummary from './components/device-summary/index.vue'
+import { createDeviceDiscovery } from './helpers/discovery.js'
 import BatchActions from './components/batch-actions/index.vue'
 import ControlBar from '$/components/control-bar/index.vue'
 import MirrorAction from './components/mirror-action/index.vue'
@@ -178,7 +186,7 @@ import { deviceStatus } from '$/dicts/index.js'
 const deviceStore = useDeviceStore()
 const preferenceStore = usePreferenceStore()
 
-const loading = ref(false)
+const loading = computed(() => deviceStore.loading)
 
 const mirrorActionRefs = ref([])
 const selectedRows = ref([])
@@ -193,7 +201,15 @@ const deviceList = computed({
   },
 })
 
-const hasSelection = computed(() => selectedRows.value.length > 0)
+const availableSelection = computed(() => deviceStore.error || loading.value
+  ? []
+  : selectedRows.value
+      .map(selected => deviceList.value.find(device => device.id === selected.id))
+      .filter(device => device && ['device', 'emulator'].includes(device.status)))
+const hasSelection = computed(() => availableSelection.value.length > 0)
+watch(deviceList, (devices) => {
+  mirrorActionRefs.value = mirrorActionRefs.value.filter(item => devices.some(device => device.id === item.row.id && ['device', 'emulator'].includes(device.status)))
+})
 
 const statusFilters = computed(() => {
   return deviceStatus
@@ -218,33 +234,13 @@ function remarkFilterMethod(value, row, column) {
   return target === value
 }
 
-async function getDeviceData(options = {}) {
-  const { unloading = false } = options
-
-  if (!unloading) {
-    loading.value = true
-  }
-
+async function getDeviceData() {
   try {
     await deviceStore.getList()
   }
-  catch (error) {
-    const message = error?.message || error?.cause?.message || ''
-    console.warn('Device list fetch error:', message)
-
-    if (message.includes('failed to start daemon')) {
-      await getDeviceData()
-      return false
-    }
-
-    if (message) {
-      ElMessage.warning(message)
-    }
-
-    deviceList.value = []
+  catch {
+    // The store retains the last snapshot and exposes a recoverable error.
   }
-
-  loading.value = false
 }
 
 function filterMethod(value, row, column) {
@@ -254,19 +250,6 @@ function filterMethod(value, row, column) {
 
 function onSelectionChange(rows) {
   selectedRows.value = rows
-}
-
-async function onAdbWatch(type, ret) {
-  if (ret && ret.id) {
-    await sleep(1000)
-    getDeviceData()
-  }
-
-  if (type === 'remove') {
-    mirrorActionRefs.value = mirrorActionRefs.value.filter(
-      item => item.row.id !== ret.id,
-    )
-  }
 }
 
 let autoMirrorTimer
@@ -300,7 +283,7 @@ async function getMirrorActionRefs(ref) {
   }
   autoMirrorTimer = setTimeout(async () => {
     for (const item of mirrorActionRefs.value) {
-      await item.handleClick(item.row)
+      await deviceStore.runDeviceAction(item.row.id, () => item.handleClick(item.row))
       await sleep()
     }
   }, 1000)
@@ -314,27 +297,34 @@ function handleConnect(...args) {
   wirelessGroupRef.value.connect(...args)
 }
 
-async function handleRefresh() {
-  loading.value = true
-  await sleep()
-  getDeviceData({ resetResolve: true, unloading: true })
-}
-
 function onAutoConnected() {}
 
-let unAdbWatch = null
+const discovery = createDeviceDiscovery({
+  subscribe: callback => window.$preload.adb.watch(callback),
+  onChange: getDeviceData,
+  onError: () => { deviceStore.error = window.t('connection.serviceError') },
+})
+
+async function handleRefresh() {
+  await getDeviceData()
+  await discovery.start()
+}
 
 onMounted(async () => {
   await getDeviceData()
-  unAdbWatch = await window.$preload.adb.watch(onAdbWatch)
+  await discovery.start()
 })
 
 onBeforeUnmount(() => {
-  unAdbWatch?.()
+  discovery.stop()
+  clearTimeout(autoMirrorTimer)
 })
 
+let activated = false
 onActivated(() => {
-  getDeviceData()
+  if (activated)
+    getDeviceData()
+  activated = true
 })
 </script>
 

@@ -384,6 +384,7 @@
     "definePage": true,
     "useAppUpdate": true,
     "useCssSupports": true,
-    "useElementOverflow": true
+    "useElementOverflow": true,
+    "useDeviceInfo": true
   }
 }

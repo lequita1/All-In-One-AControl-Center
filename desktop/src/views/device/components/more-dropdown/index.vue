@@ -4,7 +4,7 @@
       type="primary"
       text
       circle
-      :disabled="['unauthorized', 'offline'].includes(row.status)"
+      :disabled="!ready"
       icon="CirclePlus"
       :title="$t('device.actions.more.name')"
     >
@@ -22,7 +22,7 @@
           }"
           v-slot="{ loading, trigger }"
         >
-          <el-dropdown-item :disabled="loading" @click="trigger">
+          <el-dropdown-item :disabled="loading || !ready" @click="deviceStore.runDeviceAction(row.id, trigger)">
             <template v-if="loading">
               <el-icon class="is-loading">
                 <Loading />
@@ -51,6 +51,9 @@ const props = defineProps({
   ...Camera.props,
   ...Custom.props,
 })
+
+const deviceStore = useDeviceStore()
+const ready = computed(() => deviceStore.isDeviceReady(props.row.id))
 
 const options = computed(() => {
   return [

@@ -143,6 +143,10 @@ async function watch(callback) {
     callback('remove', device)
   })
 
+  tracker.on('change', (device) => {
+    callback('change', device)
+  })
+
   tracker.on('end', (ret) => {
     callback('end', ret)
   })
@@ -457,7 +461,7 @@ async function getScreenSize(id) {
 
 async function getDeviceList() {
   const listDevicesWithPaths = await client.listDevicesWithPaths()
-  const devices = listDevicesWithPaths.filter(item => !['offline'].includes(item.type))
+  const devices = listDevicesWithPaths
 
   const concurrencyLimit = Number(electronStore.get('common.concurrencyLimit') ?? 10)
   const limit = pLimit(concurrencyLimit)
@@ -465,6 +469,9 @@ async function getDeviceList() {
   const value = await Promise.all(
     devices.map(item =>
       limit(async () => {
+        if (!['device', 'emulator'].includes(item.type)) {
+          return { ...item, serialNo: item.id, screenWidth: null, screenHeight: null }
+        }
         const [serialNo, screenSize] = await Promise.all([
           getSerialNo(item.id),
           getScreenSize(item.id),

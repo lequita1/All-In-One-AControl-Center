@@ -27,6 +27,7 @@ import { getAppBackgroundColor } from './helpers/index.js'
 
 import {
   contextMenuService,
+  deviceInfoService,
   edgerService,
   handlesService,
   launchService,
@@ -70,6 +71,7 @@ mainApp.use(clipboardPlugin)
 mainApp.use(edgerService)
 mainApp.use(listenersService)
 mainApp.use(handlesService)
+mainApp.use(deviceInfoService)
 mainApp.use(trayService)
 mainApp.use(contextMenuService)
 mainApp.use(updaterService)

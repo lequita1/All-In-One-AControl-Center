@@ -109,3 +109,33 @@ Built x64 portable with the existing builder configuration and an ignored wrappe
 An earlier package inspection found **34 entries from the prior baseline build** inside `app.asar`, pulled in by native-module globs. Added an explicit `dist-release` exclusion in `desktop/build/native-modules.js`, rebuilt into a separate directory, then inspected with `@electron/asar.listPackage`: 260 entries, **zero prior-build entries**, zero foreign-platform node-pty entries. The failed intermediate artifact remains local and is not the checkpoint artifact.
 
 Verified artifact: `desktop/dist-release/security-verified/Escrcpy-3.3.1-win-portable-x64.exe`, **114,031,703 bytes**, SHA-256 `e0fac46bec2971f5314b6de602c98a5b7d88e11916838b6a0dc7e8e2d2403545`. Authenticode status: **NotSigned** despite builder signing-step log messages. Packaging log: ignored `.baseline-logs/security-portable-verified.log`. No new launch, live mirror or input result is claimed for this file.
+
+
+## 26 October 2026 — connection workspace checkpoint
+
+Source: connection workspace changes on `feat/secure-device-operations`, based on `1c820443977c016c621d42dcb7ba0108a8aaa0ea`; reviewed in the existing draft PR #1. This is a Phase 2 increment, not a full-roadmap completion or release.
+
+### Automated checks and review
+
+- `pnpm test`: exit 0, **120 tests across 15 files**. Coverage adds selected-target persistence, stalled/stale refreshes, tracker authorization changes and late/disposed subscriptions, per-target metadata responses, partial/unsupported metrics, output limits/timeouts, managed-frame/page validation, mirror error feedback and real English/Chinese locale loading with message interpolation.
+- Targeted regressions were observed failing before fixes for stale tracker events, unguarded captured actions and the observed wireless name-field layout. Guarded menu/queued mirror actions reject stale, refreshing, unauthorized and missing targets; changing the selector does not retarget a captured action.
+- `pnpm -r --if-present typecheck`: all five package checks passed. `pnpm exec turbo build`: all six tasks passed after final code and locale changes. Logs: ignored `.baseline-logs/connection-tests-complete.log`, `connection-typecheck-final.log`, `connection-build-complete.log`.
+- A fresh-context reviewer found two important issues: an already-open teleported More menu escaped table `inert`, and queued auto-mirroring did not check refresh loading. Both now use the same current-target readiness check at invocation; reviewer confirmed the fixes. Serial display/search was added to distinguish same-named devices. Hidden batch controls are inert and hidden from accessibility when no valid selection exists. Pending dialogs in inherited app/file operations remain for their feature phases.
+
+### Packaged observations
+
+An x64 unpacked preview was launched with a disposable portable-data profile. The first UI inspection exposed translation keys instead of labels even though packaged locale files existed. The updated backend's filesystem templates use `{{lng}}` independently of message interpolation. A real-locale regression failed before correcting the path and passed afterward; a rebuilt preview displayed readable labels, setup guidance and navigation.
+
+Inspected the real 800px-wide dark and light screens, Preferences navigation and the maximized 1920px layout. The sidebar collapses at the narrow size, the wireless footer wraps, window controls remain separate and the disconnected target retains its identity with mirroring disabled. These observations initially used the preview before the review guard/selector-detail fixes; final checkpoint observations follow below.
+
+During inspection, the POCO appeared on the existing ADB service over wireless. The new narrow service returned model M2007J20CG, Android 12, battery 84% (later 83%) and screen 1080 × 2400. It subsequently appeared offline with its selected target retained. No shared server was stopped or replaced. This establishes a live read-only metadata observation, not a USB/wireless reconnect reliability or mirror/input pass for the changed build.
+
+The wireless list returned positional fields shifted by an omitted path column (`product:` in path, `model:` in product, `device:` in model). Name display now selects the explicit `model:` token first; a regression covers normal and shifted responses. Device addresses and identifiers remain in ignored local profiles, not this public log.
+
+Remaining: fresh changed-artifact mirroring/input verification, fuller USB/wireless authorization/reconnect coverage and embedded-mirroring decision. Broad renderer/IPC privileges, Android package/path mutation boundaries, remaining advisory/provenance and sharing gates are still open. No security-complete or public-release-ready claim.
+
+
+Final portable packaging: `pnpm --filter escrcpy exec electron-builder --config=../.local-tools/electron-builder-connection.config.mjs --win portable --x64 --publish=never` exited 0. The ignored wrapper only changes the output directory. Artifact `desktop/dist-release/connection-checkpoint/Escrcpy-3.3.1-win-portable-x64.exe`: **114,041,227 bytes**, SHA-256 `4976a39a58129ae00614f8c64c85dc5411dbe3ec20b6bf2988acb1fec5817281`, Authenticode **NotSigned**. A copied launch-test artifact has the same SHA-256. No executable uploaded or release published. `pnpm lint` exited 0 after final changes (`connection-lint-complete.log`).
+
+
+Final archive inspection with installed `@electron/asar`: 260 entries, zero prior-output entries, zero foreign-platform node-pty entries. Launched the matching copied portable itself, not only the unpacked executable. With automatic wireless connection disabled in its disposable profile, two synthetic offline USB IDs verified long-label wrapping at 800px, readable serial detail, serial-based filtering and keyboard selection of the second target. The summary changed to that exact target and kept mirroring disabled; hidden batch actions disappeared from the accessibility tree. Devices, Preferences and About navigation rendered. These are UI fixtures, not two-phone hardware evidence; no fixture device command was sent.

@@ -30,6 +30,7 @@ export function createMiddleware() {
     store,
     i18n,
     adb,
+    deviceInfo: { read: serial => electronAPI.ipcRenderer.invoke('device-info:read', serial) },
     scrcpy,
     gnirehtet,
     search,
